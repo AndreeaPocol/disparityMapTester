@@ -8,6 +8,27 @@ def pixelIsUnknown(pixelDisp):
     return pixelDisp == 0
 
 
+def detect_outliers(data, threshold=3):
+    outliers = []
+    data_mean = np.mean(data)
+    data_std = np.std(data)
+
+    for y in data:
+        z_score = (y - data_mean) / data_std
+        if np.abs(z_score) > threshold:
+            outliers.append(y)
+    return outliers
+
+
+def plotHistogram(disps):
+    plt.hist(x=disps, bins="auto", color="#0504aa", alpha=0.7, rwidth=0.85)
+    plt.grid(axis="y", alpha=0.75)
+    plt.xlabel("Disparity Value")
+    plt.ylabel("Frequency")
+    plt.title("Disparity value vs frequency")
+    plt.show()
+
+
 def processPixels(dispMap, outputScore):
     rows = dispMap.shape[0]
     cols = dispMap.shape[1]
@@ -25,6 +46,10 @@ def processPixels(dispMap, outputScore):
                 outputScore[r][c] = definitelyWrong
             else:
                 disps.append(curPixelDisp)
+
+    outliers = detect_outliers(disps)
+    print(outliers)
+    plotHistogram(disps)
 
 
 def main():
