@@ -29,6 +29,27 @@ def plotHistogram(disps):
     plt.show()
 
 
+def showColourDist(img):
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    from matplotlib import colors
+
+    h, s, v = cv2.split(img)
+    fig = plt.figure()
+    axis = fig.add_subplot(1, 1, 1, projection="3d")
+    pixel_colors = img.reshape((np.shape(img)[0] * np.shape(img)[1], 3))
+    norm = colors.Normalize(vmin=-1.0, vmax=1.0)
+    norm.autoscale(pixel_colors)
+    pixel_colors = norm(pixel_colors).tolist()
+    axis.scatter(
+        h.flatten(), s.flatten(), v.flatten(), facecolors=pixel_colors, marker="."
+    )
+    axis.set_xlabel("Hue")
+    axis.set_ylabel("Saturation")
+    axis.set_zlabel("Value")
+    plt.show()
+
+
 def processPixels(dispMap, outputScore):
     rows = dispMap.shape[0]
     cols = dispMap.shape[1]
@@ -69,11 +90,14 @@ def main():
 
     dispMap = cv2.imread(dispMapFile, 0)  # grayscale mode
     outputScore = cv2.imread(dispMapFile, 1)  # colour mode
+    originalImage = cv2.imread(originalImageFile, 1)
 
+    # showColourDist(originalImage)
     processPixels(dispMap, outputScore)
 
     cv2.imshow("Original disparity map", dispMap)
     cv2.imshow("Marked disparity map", outputScore)
+    cv2.imshow("Original image", originalImage)
     cv2.waitKey(0)  # waits until a key is pressed
     cv2.destroyAllWindows()
     cv2.imwrite(dispMapScoreOutputFile, outputScore)
