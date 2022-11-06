@@ -2,6 +2,8 @@ import sys
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+from skimage.segmentation import slic
+from skimage.color import label2rgb
 
 
 def pixelIsUnknown(pixelDisp):
@@ -50,6 +52,18 @@ def showColourDist(img):
     plt.show()
 
 
+def segment(img):
+    # Applying Simple Linear Iterative
+    # Clustering on the image
+    # - 50 segments & compactness = 10
+    segments = slic(img, n_segments=800, compactness=20)
+    print(segments)
+    # Converts a label image into
+    # an RGB color image for visualizing
+    # the labeled regions.
+    return label2rgb(segments, img, kind="avg")
+
+
 def processPixels(dispMap, outputScore):
     rows = dispMap.shape[0]
     cols = dispMap.shape[1]
@@ -68,9 +82,9 @@ def processPixels(dispMap, outputScore):
             else:
                 disps.append(curPixelDisp)
 
-    outliers = detect_outliers(disps)
-    print(outliers)
-    plotHistogram(disps)
+    # outliers = detect_outliers(disps)
+    # print(outliers)
+    # plotHistogram(disps)
 
 
 def main():
@@ -92,9 +106,12 @@ def main():
     outputScore = cv2.imread(dispMapFile, 1)  # colour mode
     originalImage = cv2.imread(originalImageFile, 1)
 
+    segmentedImage = segment(originalImage)
+
     # showColourDist(originalImage)
     processPixels(dispMap, outputScore)
 
+    cv2.imshow("Colour-segmented image", segmentedImage)
     cv2.imshow("Original disparity map", dispMap)
     cv2.imshow("Marked disparity map", outputScore)
     cv2.imshow("Original image", originalImage)
