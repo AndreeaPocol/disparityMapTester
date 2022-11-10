@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from skimage.segmentation import slic
 from skimage.color import label2rgb
+from matplotlib import colors
 
 
 def pixelIsUnknown(pixelDisp):
@@ -32,10 +33,6 @@ def plotHistogram(disps):
 
 
 def showColourDist(img):
-    from mpl_toolkits.mplot3d import Axes3D
-    from matplotlib import cm
-    from matplotlib import colors
-
     h, s, v = cv2.split(img)
     fig = plt.figure()
     axis = fig.add_subplot(1, 1, 1, projection="3d")
@@ -57,16 +54,21 @@ def segment(img):
     # Clustering on the image
     # - 50 segments & compactness = 10
     segments = slic(img, n_segments=800, compactness=20)
-    print(segments)
     # Converts a label image into
     # an RGB color image for visualizing
     # the labeled regions.
-    return label2rgb(segments, img, kind="avg")
+    return segments, label2rgb(segments, img, kind="avg")
 
 
-def processPixels(dispMap, outputScore):
+def processPixels(dispMap, outputScore, segments, segmentedImage, originalImage):
+
     rows = dispMap.shape[0]
     cols = dispMap.shape[1]
+
+    assert (segments.shape[0] == rows) and (segments.shape[1] == cols)
+
+    segmentDispDict = {}
+    segmentCoordsDict = {}
 
     definitelyWrong = (0, 0, 255)  # red
     maybeWrong = (0, 165, 255)  # orange
@@ -81,6 +83,36 @@ def processPixels(dispMap, outputScore):
                 outputScore[r][c] = definitelyWrong
             else:
                 disps.append(curPixelDisp)
+            # Update segment disparities in segmentDispDict.
+            # segmentId is the label. We want to know all the
+            # disparities in the segment with id segmentId
+            segmentId = segments[r][c]
+            segmentDisps = [curPixelDisp]
+            if segmentId in segmentDispDict:
+                segmentDisps = segmentDisps + segmentDispDict[segmentId]
+            segmentDispDict[segmentId] = segmentDisps
+            # Update segment coordinates.
+            # We want to know all the pixels
+            # in the segment with id segmentId
+            # and their coordinates.
+            segmentCoords = [[r, c]]
+            if segmentId in segmentCoordsDict:
+                segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
+            segmentCoordsDict[segmentId] = segmentCoords
+
+    # for every segment...
+    numSegments = len(segmentCoordsDict)
+    print("Number of segments: {}".format(numSegments))
+    for segmentId, segmentCoords in segmentCoordsDict.items():
+        curSegment = np.copy(segmentedImage)
+        # find only pixels pertaining to a single segment
+        # (the rest should be black)
+        for r in range(0, rows):
+            for c in range(0, cols):
+                if [r, c] not in segmentCoords:
+                    curSegment[r][c] = (0, 0, 0)
+        # cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
+        # cv2.waitKey(0)
 
     # outliers = detect_outliers(disps)
     # print(outliers)
@@ -106,10 +138,10 @@ def main():
     outputScore = cv2.imread(dispMapFile, 1)  # colour mode
     originalImage = cv2.imread(originalImageFile, 1)
 
-    segmentedImage = segment(originalImage)
+    segments, segmentedImage = segment(originalImage)
 
     # showColourDist(originalImage)
-    processPixels(dispMap, outputScore)
+    processPixels(dispMap, outputScore, segments, segmentedImage, originalImage)
 
     cv2.imshow("Colour-segmented image", segmentedImage)
     cv2.imshow("Original disparity map", dispMap)
