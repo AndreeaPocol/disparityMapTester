@@ -60,6 +60,26 @@ def segment(img):
     return segments, label2rgb(segments, img, kind="avg")
 
 
+def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
+    rows = segmentedImage.shape[0]
+    cols = segmentedImage.shape[1]
+    # for every segment...
+    numSegments = len(segmentCoordsDict)
+    print("Number of segments: {}".format(numSegments))
+    for segmentId, segmentCoords in segmentCoordsDict.items():
+        curSegment = np.copy(segmentedImage)
+        # find only pixels pertaining to a single segment
+        # (the rest should be black)
+        for r in range(0, rows):
+            for c in range(0, cols):
+                if [r, c] not in segmentCoords:
+                    curSegment[r][c] = (0, 0, 0)
+        if len(segmentDispDict[segmentId]) > 4:
+            cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
+            plotHistogram(segmentDispDict[segmentId])
+            cv2.waitKey(0)
+
+
 def processPixels(dispMap, outputScore, segments, segmentedImage, originalImage):
 
     rows = dispMap.shape[0]
@@ -100,19 +120,7 @@ def processPixels(dispMap, outputScore, segments, segmentedImage, originalImage)
                 segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
             segmentCoordsDict[segmentId] = segmentCoords
 
-    # for every segment...
-    numSegments = len(segmentCoordsDict)
-    print("Number of segments: {}".format(numSegments))
-    for segmentId, segmentCoords in segmentCoordsDict.items():
-        curSegment = np.copy(segmentedImage)
-        # find only pixels pertaining to a single segment
-        # (the rest should be black)
-        for r in range(0, rows):
-            for c in range(0, cols):
-                if [r, c] not in segmentCoords:
-                    curSegment[r][c] = (0, 0, 0)
-        # cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
-        # cv2.waitKey(0)
+    # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
 
     # outliers = detect_outliers(disps)
     # print(outliers)
@@ -140,10 +148,11 @@ def main():
 
     segments, segmentedImage = segment(originalImage)
 
+    cv2.imshow("Colour-segmented image", segmentedImage)
+
     # showColourDist(originalImage)
     processPixels(dispMap, outputScore, segments, segmentedImage, originalImage)
 
-    cv2.imshow("Colour-segmented image", segmentedImage)
     cv2.imshow("Original disparity map", dispMap)
     cv2.imshow("Marked disparity map", outputScore)
     cv2.imshow("Original image", originalImage)
