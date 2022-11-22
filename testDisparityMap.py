@@ -187,11 +187,13 @@ def main():
     cv2.imshow("Colour-segmented image", segmentedImage)
 
     # showColourDist(originalImage)
-    processPixels(dispMap, outputScore, segments, segmentedImage, originalImage)
+    processPixels(
+        leftDispMap, rightDispMap, outputScore, segments, segmentedImage, originalImage
+    )
 
-    cv2.imshow("Original disparity map", dispMap)
-    cv2.imshow("Marked disparity map", outputScore)
-    cv2.imshow("Original image", originalImage)
+    cv2.imshow("Original (left) disparity map", leftDispMap)
+    cv2.imshow("Marked (left) disparity map", outputScore)
+    cv2.imshow("Original (left) image", originalImage)
     cv2.waitKey(0)  # waits until a key is pressed
     cv2.destroyAllWindows()
     cv2.imwrite(dispMapScoreOutputFile, outputScore)
