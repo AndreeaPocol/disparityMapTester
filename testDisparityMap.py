@@ -80,10 +80,35 @@ def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
             cv2.waitKey(0)
 
 
-def processPixels(dispMap, outputScore, segments, segmentedImage, originalImage):
+def pixelDoesNotFuseProperly(
+    r, c, d, leftDispMap, rightDispMap, leftOriginalImage, rightOriginalImage
+):
+    p = leftDispMap[r][c]  # d
+    q = rightDispMap[r][c - d]
+    return ((c - d) < 0) or (leftOriginalImage[r][c] != rightOriginalImage[r][c - d])
 
-    rows = dispMap.shape[0]
-    cols = dispMap.shape[1]
+
+def pixelIsOccludedFromBehind(r, c, leftDispMap, rightDispMap):
+    P = [r, c]
+    dispAtP = leftDispMap[r][c]  # d
+    Q = [r, c - dispAtP]
+    dispAtQ = rightDispMap[r][c - dispAtP]
+    R = [r, c + dispAtQ]
+    return P[1] > R[1]  # P is to the right of R
+
+
+def processPixels(
+    leftDispMap,
+    rightDispMap,
+    outputScore,
+    segments,
+    segmentedImage,
+    leftOriginalImage,
+    rightOriginalImage,
+):
+
+    rows = leftDispMap.shape[0]
+    cols = leftDispMap.shape[1]
 
     assert (segments.shape[0] == rows) and (segments.shape[1] == cols)
 
@@ -98,30 +123,41 @@ def processPixels(dispMap, outputScore, segments, segmentedImage, originalImage)
     disps = []
     for r in range(0, rows):
         for c in range(0, cols):
-            curPixelDisp = dispMap[r][c]
-            if pixelIsUnknown(curPixelDisp):
+            curPixelDisp = leftDispMap[r][c]
+            if (
+                pixelIsUnknown(curPixelDisp)
+                or pixelDoesNotFuseProperly(
+                    r,
+                    c,
+                    curPixelDisp,
+                    leftDispMap,
+                    rightDispMap,
+                    leftOriginalImage,
+                    rightOriginalImage,
+                )
+                or pixelIsOccludedFromBehind(r, c, leftDispMap, rightDispMap)
+            ):
                 outputScore[r][c] = definitelyWrong
             else:
                 disps.append(curPixelDisp)
-            # Update segment disparities in segmentDispDict.
-            # segmentId is the label. We want to know all the
-            # disparities in the segment with id segmentId
-            segmentId = segments[r][c]
-            segmentDisps = [curPixelDisp]
-            if segmentId in segmentDispDict:
-                segmentDisps = segmentDisps + segmentDispDict[segmentId]
-            segmentDispDict[segmentId] = segmentDisps
-            # Update segment coordinates.
-            # We want to know all the pixels
-            # in the segment with id segmentId
-            # and their coordinates.
-            segmentCoords = [[r, c]]
-            if segmentId in segmentCoordsDict:
-                segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
-            segmentCoordsDict[segmentId] = segmentCoords
+                # Update segment disparities in segmentDispDict.
+                # segmentId is the label. We want to know all the
+                # disparities in the segment with id segmentId
+                segmentId = segments[r][c]
+                segmentDisps = [curPixelDisp]
+                if segmentId in segmentDispDict:
+                    segmentDisps = segmentDisps + segmentDispDict[segmentId]
+                segmentDispDict[segmentId] = segmentDisps
+                # Update segment coordinates.
+                # We want to know all the pixels
+                # in the segment with id segmentId
+                # and their coordinates.
+                segmentCoords = [[r, c]]
+                if segmentId in segmentCoordsDict:
+                    segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
+                segmentCoordsDict[segmentId] = segmentCoords
 
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
-
     # outliers = detect_outliers(disps)
     # print(outliers)
     # plotHistogram(disps)
