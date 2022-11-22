@@ -166,12 +166,14 @@ def processPixels(
 def main():
     leftDispMapFile = ""
     rightDispMapFile = ""
-    originalImageFile = ""
-    if len(sys.argv) == 5:
+    leftOriginalImageFile = ""
+    rightOriginalImageFile = ""
+    if len(sys.argv) == 6:
         leftDispMapFile = sys.argv[1]
         rightDispMapFile = sys.argv[2]
-        originalImageFile = sys.argv[3]
-        dispMapScoreOutputFile = sys.argv[4]
+        leftOriginalImageFile = sys.argv[3]
+        rightOriginalImageFile = sys.argv[4]
+        dispMapScoreOutputFile = sys.argv[5]
     else:
         print(
             "Usage: {name} [ leftDispMapFile rightDispMapFile originalImage dispMapScoreOutputFile ]".format(
@@ -180,22 +182,30 @@ def main():
         )
         exit
 
-    dispMap = cv2.imread(dispMapFile, 0)  # grayscale mode
-    outputScore = cv2.imread(dispMapFile, 1)  # colour mode
-    originalImage = cv2.imread(originalImageFile, 1)
+    leftDispMap = cv2.imread(leftDispMapFile, 0)  # grayscale mode
+    rightDispMap = cv2.imread(rightDispMapFile, 0)  # grayscale mode
+    outputScore = cv2.imread(leftDispMapFile, 1)  # colour mode
+    leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)
+    rightOriginalImage = cv2.imread(rightOriginalImageFile, 1)
 
-    segments, segmentedImage = segment(originalImage)
+    segments, segmentedImage = segment(leftOriginalImage)
 
     cv2.imshow("Colour-segmented image", segmentedImage)
 
     # showColourDist(originalImage)
     processPixels(
-        leftDispMap, rightDispMap, outputScore, segments, segmentedImage, originalImage
+        leftDispMap,
+        rightDispMap,
+        outputScore,
+        segments,
+        segmentedImage,
+        leftOriginalImage,
+        rightOriginalImage,
     )
 
     cv2.imshow("Original (left) disparity map", leftDispMap)
     cv2.imshow("Marked (left) disparity map", outputScore)
-    cv2.imshow("Original (left) image", originalImage)
+    cv2.imshow("Original (left) image", leftOriginalImage)
     cv2.waitKey(0)  # waits until a key is pressed
     cv2.destroyAllWindows()
     cv2.imwrite(dispMapScoreOutputFile, outputScore)

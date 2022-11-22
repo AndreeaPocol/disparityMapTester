@@ -1,13 +1,11 @@
 To run:
 ```
-python3 testDisparityMap.py <leftDispMapFile> <rightDispMapFile> <originalImage> <dispMapScoreOutputFile>
+python3 testDisparityMap.py <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFile>
 ```
 
 Examples: 
 ```
-python3 testDisparityMap.py inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_left.png inputs/art/output/left_disparity_art_bad_score.png
-
-python3 testDisparityMap.py inputs/art/input/left_disparity_art.png inputs/art/input/right_disparity_art.png inputs/art/art_left.png inputs/art/output/left_disparity_art_bad_score.png
+python3 testDisparityMap.py inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_left.png inputs/art/art_right.png inputs/art/output/left_disparity_art_bad_score.png
 ```
 
 Given a disparity map, `testDisparityMap` will:
