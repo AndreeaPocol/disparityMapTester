@@ -164,15 +164,17 @@ def processPixels(
 
 
 def main():
-    dispMapFile = ""
+    leftDispMapFile = ""
+    rightDispMapFile = ""
     originalImageFile = ""
-    if len(sys.argv) == 4:
-        dispMapFile = sys.argv[1]
-        originalImageFile = sys.argv[2]
-        dispMapScoreOutputFile = sys.argv[3]
+    if len(sys.argv) == 5:
+        leftDispMapFile = sys.argv[1]
+        rightDispMapFile = sys.argv[2]
+        originalImageFile = sys.argv[3]
+        dispMapScoreOutputFile = sys.argv[4]
     else:
         print(
-            "Usage: {name} [ dispMapFile originalImage dispMapScoreOutputFile ]".format(
+            "Usage: {name} [ leftDispMapFile rightDispMapFile originalImage dispMapScoreOutputFile ]".format(
                 name=sys.argv[0]
             )
         )
