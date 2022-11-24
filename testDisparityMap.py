@@ -80,12 +80,17 @@ def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
             cv2.waitKey(0)
 
 
-def pixelDoesNotFuseProperly(
-    r, c, d, leftDispMap, rightDispMap, leftOriginalImage, rightOriginalImage
-):
-    p = leftDispMap[r][c]  # d
-    q = rightDispMap[r][c - d]
-    return ((c - d) < 0) or (leftOriginalImage[r][c] != rightOriginalImage[r][c - d])
+def pixelDoesNotFuseProperly(r, c, d, leftOriginalImage, rightOriginalImage):
+
+    m = interp1d([0, 255], [0, 1])
+    c1 = leftOriginalImage[r][c]
+    c2 = rightOriginalImage[r][c - d]
+    distR = m(c1[0]) - m(c2[0])
+    distG = m(c1[1]) - m(c2[1])
+    distB = m(c1[2]) - m(c2[2])
+
+    eDist = math.sqrt(pow(distR, 2) + pow(distG, 2) + pow(distB, 2))
+    return ((c - d) < 0) or eDist > 3
 
 
 def pixelIsOccludedFromBehind(r, c, leftDispMap, rightDispMap):
