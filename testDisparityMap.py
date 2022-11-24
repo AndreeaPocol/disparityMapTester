@@ -2,9 +2,39 @@ import sys
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from skimage.segmentation import slic
 from skimage.color import label2rgb
 from matplotlib import colors
+from webcolors import name_to_rgb
+from scipy.interpolate import interp1d
+
+COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
+
+code_2_color = {
+    "definitelyWrongOcclusionError": "brown",  # (0, 20, 20)  # brown
+    "definitelyWrongUnknown": "red",  # (0, 0, 255)  # red
+    "definitelyWrongNoFuse": "maroon",  # (0, 0, 125)  # maroon
+    "maybeWrongFuseColorMismatch": "magenta",  # (255, 0, 255)  # magenta
+    "uncertainOcclusion": "orange",  # (0, 165, 255)  # orange
+    "outOfBoundsOcclusion": "yellow",  # (0, 255, 255)  # yellow
+    "maybeRight": "blue",  # (255, 0, 0)  # blue
+    "definitelyRight": "green",  # (0, 255, 0)  # green
+}
+
+
+def displayLegend():
+    handles = []
+    for code, color in code_2_color.items():
+        handle = mpatches.Patch(
+            color=color,
+            label=code,
+        )
+        handles.append(handle)
+    plt.legend(handles=handles)
+    plt.axes = None
+
+    plt.show()
 
 
 def pixelIsUnknown(pixelDisp):
