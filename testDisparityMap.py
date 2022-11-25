@@ -43,24 +43,39 @@ def pixelIsUnknown(pixelDisp):
     return pixelDisp == 0
 
 
-def detect_outliers(data, threshold=3):
-    outliers = []
-    data_mean = np.mean(data)
-    data_std = np.std(data)
+def detectOutliers(data, leftDispMap):
+    rows = leftDispMap.shape[0]
+    cols = leftDispMap.shape[1]
 
-    for y in data:
-        z_score = (y - data_mean) / data_std
-        if np.abs(z_score) > threshold:
-            outliers.append(y)
+    outliers = []
+    l = np.percentile(data, 2.5)
+    r = np.percentile(data, 97.5)
+    print("Lower bound: ", l, "Upper bound: ", r)
+
+    for r in range(0, rows):
+        for c in range(0, cols):
+            curPixelDisp = leftDispMap[r][c]
+            if curPixelDisp < l or curPixelDisp > r:
+                outliers.append(curPixelDisp)
     return outliers
 
 
-def plotHistogram(disps):
-    plt.hist(x=disps, bins="auto", color="#0504aa", alpha=0.7, rwidth=0.85)
+def plotHistogram(disps, outliers):
+
+    fig, ax = plt.subplots()
+
+    N, bins, patches = ax.hist(disps, edgecolor="white", linewidth=1, bins=len(disps))
     plt.grid(axis="y", alpha=0.75)
     plt.xlabel("Disparity Value")
     plt.ylabel("Frequency")
     plt.title("Disparity value vs frequency")
+
+    for i in range(0, len(patches)):
+        if patches[i][0] in outliers:
+            patches[i].set_facecolor("g")
+    else:
+        patches[i].set_facecolor("b")
+
     plt.show()
 
 
@@ -217,10 +232,13 @@ def processPixels(
                     segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
                 segmentCoordsDict[segmentId] = segmentCoords
 
+    globalOutliers = detectOutliers(disps, leftDispMap)
+    plotHistogram(disps, globalOutliers)
+    # for segmentId in segmentDispDict:
+    #     segmentOutliers = detectOutliers(
+    #         np.array(segmentDispDict[segmentId]), leftDispMap
+    #     )
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
-    # outliers = detect_outliers(disps)
-    # print(outliers)
-    # plotHistogram(disps)
 
 
 def main():
