@@ -1,5 +1,6 @@
 import sys
 import cv2
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -12,14 +13,14 @@ from scipy.interpolate import interp1d
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 
 code_2_color = {
-    "definitelyWrongOcclusionError": "brown",  # (0, 20, 20)  # brown
-    "definitelyWrongUnknown": "red",  # (0, 0, 255)  # red
-    "definitelyWrongNoFuse": "maroon",  # (0, 0, 125)  # maroon
-    "maybeWrongFuseColorMismatch": "magenta",  # (255, 0, 255)  # magenta
-    "uncertainOcclusion": "orange",  # (0, 165, 255)  # orange
-    "outOfBoundsOcclusion": "yellow",  # (0, 255, 255)  # yellow
-    "maybeRight": "blue",  # (255, 0, 0)  # blue
-    "definitelyRight": "green",  # (0, 255, 0)  # green
+    "definitelyWrongOcclusionError": "brown",
+    "definitelyWrongUnknown": "red",
+    "definitelyWrongNoFuse": "purple",
+    "maybeWrongFuseColorMismatch": "pink",
+    "uncertainOcclusion": "orange",
+    "outOfBoundsOcclusion": "yellow",
+    "maybeRight": "blue",
+    "definitelyRight": "green",
 }
 
 
@@ -32,9 +33,10 @@ def displayLegend():
         )
         handles.append(handle)
     plt.legend(handles=handles)
-    plt.axes = None
-
+    plt.title = "Legend"
     plt.show()
+    cv2.waitKey(0)  # waits until a key is pressed
+    cv2.destroyAllWindows()
 
 
 def pixelIsUnknown(pixelDisp):
@@ -82,7 +84,6 @@ def showColourDist(img):
 def segment(img):
     # Applying Simple Linear Iterative
     # Clustering on the image
-    # - 50 segments & compactness = 10
     segments = slic(img, n_segments=800, compactness=20)
     # Converts a label image into
     # an RGB color image for visualizing
@@ -110,8 +111,11 @@ def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
             cv2.waitKey(0)
 
 
-def pixelDoesNotFuseProperly(r, c, d, leftOriginalImage, rightOriginalImage):
+def pixelDoesNotFuse(c, d):
+    return (c - d) < 0
 
+
+def pixelDoesNotFuseProperly(r, c, d, leftOriginalImage, rightOriginalImage):
     m = interp1d([0, 255], [0, 1])
     c1 = leftOriginalImage[r][c]
     c2 = rightOriginalImage[r][c - d]
@@ -120,16 +124,31 @@ def pixelDoesNotFuseProperly(r, c, d, leftOriginalImage, rightOriginalImage):
     distB = m(c1[2]) - m(c2[2])
 
     eDist = math.sqrt(pow(distR, 2) + pow(distG, 2) + pow(distB, 2))
-    return ((c - d) < 0) or eDist > 3
+    return eDist > COLOR_DIFF_TRESH
 
 
-def pixelIsOccludedFromBehind(r, c, leftDispMap, rightDispMap):
+def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
     P = [r, c]
-    dispAtP = leftDispMap[r][c]  # d
-    Q = [r, c - dispAtP]
-    dispAtQ = rightDispMap[r][c - dispAtP]
-    R = [r, c + dispAtQ]
-    return P[1] > R[1]  # P is to the right of R
+    dispAtP = leftDispMap[P[0]][P[1]]
+    Q = [r, P[1] - dispAtP]
+    if Q[1] < 0:
+        return "OOB"
+    dispAtQ = rightDispMap[Q[0]][Q[1]]
+    R = [r, Q[1] + dispAtQ]
+    if R[1] >= leftDispMap.shape[1]:
+        return "OOB"
+    dispAtR = leftDispMap[R[0]][R[1]]
+    T = [r, R[1] - dispAtR]
+    if T[1] < 0:
+        return "OOB"
+
+    occlusion = (R != P) and (T != Q)
+    if occlusion and (P[1] < R[1]) and (T[1] < Q[1]):
+        return "OCC"  # P is to the left of R, T is to the left of Q; pixel is occluded from the front (NORMAL)
+    elif occlusion and (P[1] > R[1]) and (T[1] > Q[1]):
+        return "OCC_ERR"  # P is to the right of R, T is to the right of Q; pixel is occluded from behind (OCCLUSION ERROR)
+    else:
+        return "NO_OCC"
 
 
 def processPixels(
@@ -150,29 +169,35 @@ def processPixels(
     segmentDispDict = {}
     segmentCoordsDict = {}
 
-    definitelyWrong = (0, 0, 255)  # red
-    maybeWrong = (0, 165, 255)  # orange
-    maybeRight = (255, 0, 0)  # blue
-    definitelyRight = (0, 255, 0)  # green
-
     disps = []
     for r in range(0, rows):
         for c in range(0, cols):
             curPixelDisp = leftDispMap[r][c]
-            if (
-                pixelIsUnknown(curPixelDisp)
-                or pixelDoesNotFuseProperly(
-                    r,
-                    c,
-                    curPixelDisp,
-                    leftDispMap,
-                    rightDispMap,
-                    leftOriginalImage,
-                    rightOriginalImage,
+            if pixelIsUnknown(curPixelDisp):
+                outputScore[r][c] = name_to_rgb(code_2_color["definitelyWrongUnknown"])
+                continue
+            occlusion = pixelIsOccluded(r, c, leftDispMap, rightDispMap)
+            if occlusion == "OOB":
+                outputScore[r][c] = name_to_rgb(code_2_color["outOfBoundsOcclusion"])
+            elif occlusion == "OCC":
+                outputScore[r][c] = name_to_rgb(code_2_color["uncertainOcclusion"])
+                # TODO: use segmentation to identify whether some of these occluded pixels make sense
+            elif occlusion == "OCC_ERR":
+                outputScore[r][c] = name_to_rgb(
+                    code_2_color["definitelyWrongOcclusionError"]
                 )
-                or pixelIsOccludedFromBehind(r, c, leftDispMap, rightDispMap)
+            elif pixelDoesNotFuse(c, curPixelDisp):
+                outputScore[r][c] = name_to_rgb(code_2_color["definitelyWrongNoFuse"])
+            elif pixelDoesNotFuseProperly(
+                r,
+                c,
+                curPixelDisp,
+                leftOriginalImage,
+                rightOriginalImage,
             ):
-                outputScore[r][c] = definitelyWrong
+                outputScore[r][c] = name_to_rgb(
+                    code_2_color["maybeWrongFuseColorMismatch"]
+                )
             else:
                 disps.append(curPixelDisp)
                 # Update segment disparities in segmentDispDict.
@@ -199,6 +224,7 @@ def processPixels(
 
 
 def main():
+
     leftDispMapFile = ""
     rightDispMapFile = ""
     leftOriginalImageFile = ""
@@ -225,7 +251,7 @@ def main():
 
     segments, segmentedImage = segment(leftOriginalImage)
 
-    cv2.imshow("Colour-segmented image", segmentedImage)
+    # cv2.imshow("Colour-segmented image", segmentedImage)
 
     # showColourDist(originalImage)
     processPixels(
@@ -238,9 +264,12 @@ def main():
         rightOriginalImage,
     )
 
+    outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+
     cv2.imshow("Original (left) disparity map", leftDispMap)
     cv2.imshow("Marked (left) disparity map", outputScore)
     cv2.imshow("Original (left) image", leftOriginalImage)
+    displayLegend()
     cv2.waitKey(0)  # waits until a key is pressed
     cv2.destroyAllWindows()
     cv2.imwrite(dispMapScoreOutputFile, outputScore)
