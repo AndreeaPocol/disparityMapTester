@@ -9,6 +9,7 @@ from skimage.color import label2rgb
 from matplotlib import colors
 from webcolors import name_to_rgb
 from scipy.interpolate import interp1d
+import seaborn as sns
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 
@@ -48,34 +49,39 @@ def detectOutliers(data, leftDispMap):
     cols = leftDispMap.shape[1]
 
     outliers = []
-    l = np.percentile(data, 2.5)
-    r = np.percentile(data, 97.5)
-    print("Lower bound: ", l, "Upper bound: ", r)
+    lower = np.percentile(data, 2.5)
+    upper = np.percentile(data, 97.5)
+    print("Lower bound: ", lower, "Upper bound: ", upper)
 
     for r in range(0, rows):
         for c in range(0, cols):
             curPixelDisp = leftDispMap[r][c]
-            if curPixelDisp < l or curPixelDisp > r:
+            if curPixelDisp < lower or curPixelDisp > upper:
                 outliers.append(curPixelDisp)
-    return outliers
+    return outliers, lower, upper
 
 
-def plotHistogram(disps, outliers):
+def plotHistogram(disps, lower, upper):
+    # plt parameters
+    plt.rcParams['figure.figsize'] = (10.0, 10.0)
+    plt.style.use('seaborn-dark-palette')
+    plt.rcParams['axes.grid'] = True
+    plt.rcParams["patch.force_edgecolor"] = True
 
-    fig, ax = plt.subplots()
+    p = sns.histplot(disps, stat='density')
 
-    N, bins, patches = ax.hist(disps, edgecolor="white", linewidth=1, bins=len(disps))
-    plt.grid(axis="y", alpha=0.75)
     plt.xlabel("Disparity Value")
     plt.ylabel("Frequency")
     plt.title("Disparity value vs frequency")
 
-    for i in range(0, len(patches)):
-        if patches[i][0] in outliers:
-            patches[i].set_facecolor("g")
-    else:
-        patches[i].set_facecolor("b")
+    for rectangle in p.patches:
+        if rectangle.get_x() > upper or rectangle.get_x() < lower:
+            rectangle.set_facecolor('red')
+        else:
+            rectangle.set_facecolor('blue')
 
+    plt.axvline(lower, color='black')
+    plt.axvline(upper, color='black')
     plt.show()
 
 
@@ -183,8 +189,8 @@ def processPixels(
 
     segmentDispDict = {}
     segmentCoordsDict = {}
-
     disps = []
+
     for r in range(0, rows):
         for c in range(0, cols):
             curPixelDisp = leftDispMap[r][c]
@@ -192,9 +198,9 @@ def processPixels(
                 outputScore[r][c] = name_to_rgb(code_2_color["definitelyWrongUnknown"])
                 continue
             occlusion = pixelIsOccluded(r, c, leftDispMap, rightDispMap)
-            if occlusion == "OOB":
+            if occlusion == "OOB": # TODO: should probably be counted with the other disps
                 outputScore[r][c] = name_to_rgb(code_2_color["outOfBoundsOcclusion"])
-            elif occlusion == "OCC":
+            elif occlusion == "OCC": # TODO: should probably be counted with the other disps
                 outputScore[r][c] = name_to_rgb(code_2_color["uncertainOcclusion"])
                 # TODO: use segmentation to identify whether some of these occluded pixels make sense
             elif occlusion == "OCC_ERR":
@@ -232,8 +238,8 @@ def processPixels(
                     segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
                 segmentCoordsDict[segmentId] = segmentCoords
 
-    globalOutliers = detectOutliers(disps, leftDispMap)
-    plotHistogram(disps, globalOutliers)
+    globalOutliers, lower, upper = detectOutliers(disps, leftDispMap)
+    plotHistogram(disps, lower, upper)
     # for segmentId in segmentDispDict:
     #     segmentOutliers = detectOutliers(
     #         np.array(segmentDispDict[segmentId]), leftDispMap
