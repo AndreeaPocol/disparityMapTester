@@ -20,6 +20,7 @@ code_2_color = {
     "maybeWrongFuseColorMismatch": "pink",
     "uncertainOcclusion": "orange",
     "outOfBoundsOcclusion": "yellow",
+    "maybeWrongSegmentOutlier": "magenta",
     "maybeRight": "blue",
     "definitelyRight": "green",
 }
@@ -238,13 +239,28 @@ def processPixels(
                     segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
                 segmentCoordsDict[segmentId] = segmentCoords
 
-    globalOutliers, lower, upper = detectOutliers(disps, leftDispMap)
-    plotHistogram(disps, lower, upper)
-    # for segmentId in segmentDispDict:
-    #     segmentOutliers = detectOutliers(
-    #         np.array(segmentDispDict[segmentId]), leftDispMap
-    #     )
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+
+    # globalOutliers, lower, upper = detectOutliers(disps, leftDispMap)
+    # plotHistogram(disps, lower, upper)
+
+    for segmentId in segmentDispDict:
+        disps = segmentDispDict[segmentId]
+        segmentOutliers, lower, upper = detectOutliers(
+            np.array(disps), leftDispMap
+        )
+        plotHistogram(disps, lower, upper)
+        for pixel in segmentCoordsDict[segmentId]:
+            x = pixel[0]
+            y = pixel[1]
+            if leftDispMap[x][y] in segmentOutliers:
+                outputScore[x][y] = name_to_rgb(
+                        code_2_color["maybeWrongSegmentOutlier"]
+                    )
+            else:
+                outputScore[x][y] = name_to_rgb(
+                        code_2_color["maybeRight"]
+                    )
 
 
 def main():
