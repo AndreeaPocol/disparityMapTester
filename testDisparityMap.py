@@ -90,9 +90,9 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
     ranges = list(group(data))
     numRanges = len(ranges)
     if verbose:
-        print("\n", "num ranges: ", numRanges, "\n", "[ ")
+        print("\n", "num ranges: ", numRanges, "\n")
         for range in ranges:
-            print("[{} ... {}] ".format(range[0], range[-1]))
+            print("[{} ... {}] size {} ".format(range[0], range[-1], len(range)))
     if numRanges == 2:
         diff = ranges[1][0] - ranges[0][-1]
         # the outlier is the smallest range, provided there's a subtantial gap
@@ -101,11 +101,17 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
                 outliers = ranges[0]
             elif len(ranges[1]) < len(ranges[0]):
                 outliers = ranges[1]
-            if verbose:
-                print("OUTLIER(S) FOUND: ", outliers, "\n")
     if numRanges > 2:
-        longestRange = max(ranges, key=len)
-        # TODO: Finish me
+        # the outlier is is the first or last range in the sorted list of ranges,
+        # provided there's a substantial gap
+        if (ranges[1][0] - ranges[0][-1]) > OUTLIER_THRESH:
+            if len(ranges[1]) > len(ranges[0]):
+                outliers += ranges[0]
+        if (ranges[-1][0] - ranges[-2][-1]) > OUTLIER_THRESH:
+            if len(ranges[-2]) > len(ranges[-1]):
+                outliers += ranges[-1]
+    if verbose:
+        print("OUTLIER(S): ", outliers, "\n")
     return outliers
 
 
