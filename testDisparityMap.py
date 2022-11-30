@@ -231,7 +231,7 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
 
     # globalOutliers, lower, upper = detectOutliersStatistically(globaDisps, leftDispMap)
     # plotHistogram(globaDisps, lower, upper)
-    data = list(np.concatenate(np.asarray(leftDispMap)).flat)
+    data = list(filter(lambda x: x > 0, list(np.concatenate(np.asarray(leftDispMap)).flat)))
     globalOutliers = detectOutliersByContinuityHeuristic(data, verbose=True)
 
     for r in range(0, rows):
@@ -258,7 +258,7 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
                 segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
             segmentCoordsDict[segmentId] = segmentCoords
     for segmentId in segmentDispDict:
-        disps = segmentDispDict[segmentId]
+        disps = list(filter(lambda x: x > 0, segmentDispDict[segmentId]))
         segmentOutliers = detectOutliersByContinuityHeuristic(disps, verbose=False)
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
