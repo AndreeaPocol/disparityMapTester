@@ -91,6 +91,8 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
     data.sort()
     ranges = list(group(data))
     numRanges = len(ranges)
+    if numRanges == 0:
+        return []
     if verbose:
         print("\n", "num ranges: ", numRanges, "\n")
         for range in ranges:
