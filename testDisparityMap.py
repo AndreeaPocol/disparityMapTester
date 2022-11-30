@@ -158,7 +158,7 @@ def showColourDist(img):
 def segment(img):
     # Applying Simple Linear Iterative
     # Clustering on the image
-    segments = slic(img, n_segments=1000, compactness=20)
+    segments = slic(img, n_segments=800, compactness=20)
     # Converts a label image into
     # an RGB color image for visualizing
     # the labeled regions.
