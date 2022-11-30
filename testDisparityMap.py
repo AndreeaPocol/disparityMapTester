@@ -15,14 +15,14 @@ COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
-    "definitelyWrongUnknown": "red",
-    "definitelyWrongNoFuse": "purple",
+    "definitelyWrongUnknown": "black",
+    "definitelyWrongNoFuse": "red",
     "maybeWrongFuseColorMismatch": "pink",
     "uncertainOcclusion": "orange",
     "outOfBoundsOcclusion": "yellow",
     "maybeWrongSegmentOutlier": "magenta",
-    "maybeRight": "blue",
-    "definitelyRight": "green",
+    "maybeWrongGlobalOutlier": "purple",
+    "maybeRight": "blue"
 }
 
 
