@@ -24,7 +24,7 @@ code_2_color = {
     "outOfBoundsOcclusion": "yellow",
     "maybeWrongSegmentOutlier": "magenta",
     "maybeWrongGlobalOutlier": "purple",
-    "maybeRight": "blue"
+    "maybeRight": "blue",
 }
 
 
@@ -46,15 +46,16 @@ def displayLegend():
 def pixelIsUnknown(pixelDisp):
     return pixelDisp == 0
 
+
 def group(L):
     first = last = L[0]
     firstIdx = lastIdx = c = 0
     for n in L[1:]:
         c += 1
-        if (n - 1 == last) or (n == last): # Part of the group, bump the end
+        if (n - 1 == last) or (n == last):  # Part of the group, bump the end
             last = n
             lastIdx = c
-        else: # Not part of the group, yield current group and start a new
+        else:  # Not part of the group, yield current group and start a new
             if firstIdx == lastIdx:
                 yield [L[firstIdx]]
             else:
@@ -64,7 +65,7 @@ def group(L):
     if firstIdx == lastIdx:
         yield [L[firstIdx]]
     else:
-        yield L[firstIdx:lastIdx] # Yield the last group
+        yield L[firstIdx:lastIdx]  # Yield the last group
 
 
 def detectOutliersStatistically(data, leftDispMap):
@@ -117,11 +118,11 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
 
 def plotHistogram(disps, lower, upper):
     # plt parameters
-    plt.rcParams['figure.figsize'] = (10.0, 10.0)
-    plt.rcParams['axes.grid'] = True
+    plt.rcParams["figure.figsize"] = (10.0, 10.0)
+    plt.rcParams["axes.grid"] = True
     plt.rcParams["patch.force_edgecolor"] = True
 
-    p = sns.histplot(disps, stat='density')
+    p = sns.histplot(disps, stat="density")
 
     plt.xlabel("Disparity Value")
     plt.ylabel("Frequency")
@@ -129,12 +130,12 @@ def plotHistogram(disps, lower, upper):
 
     for rectangle in p.patches:
         if rectangle.get_x() > upper or rectangle.get_x() < lower:
-            rectangle.set_facecolor('red')
+            rectangle.set_facecolor("red")
         else:
-            rectangle.set_facecolor('blue')
+            rectangle.set_facecolor("blue")
 
-    plt.axvline(lower, color='black')
-    plt.axvline(upper, color='black')
+    plt.axvline(lower, color="black")
+    plt.axvline(upper, color="black")
     plt.show()
 
 
@@ -231,16 +232,16 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
 
     # globalOutliers, lower, upper = detectOutliersStatistically(globaDisps, leftDispMap)
     # plotHistogram(globaDisps, lower, upper)
-    data = list(filter(lambda x: x > 0, list(np.concatenate(np.asarray(leftDispMap)).flat)))
+    data = list(
+        filter(lambda x: x > 0, list(np.concatenate(np.asarray(leftDispMap)).flat))
+    )
     globalOutliers = detectOutliersByContinuityHeuristic(data, verbose=True)
 
     for r in range(0, rows):
         for c in range(0, cols):
             curPixelDisp = leftDispMap[r][c]
             if curPixelDisp in globalOutliers:
-                outputScore[r][c] = name_to_rgb(
-                        code_2_color["maybeWrongGlobalOutlier"]
-                    )
+                outputScore[r][c] = name_to_rgb(code_2_color["maybeWrongGlobalOutlier"])
             # Update segment disparities in segmentDispDict.
             # segmentId is the label. We want to know all the
             # disparities in the segment with id segmentId
@@ -265,14 +266,12 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
             y = pixel[1]
             if leftDispMap[x][y] in segmentOutliers:
                 outputScore[x][y] = name_to_rgb(
-                        code_2_color["maybeWrongSegmentOutlier"]
-                    )
+                    code_2_color["maybeWrongSegmentOutlier"]
+                )
             else:
-                outputScore[x][y] = name_to_rgb(
-                        code_2_color["maybeRight"]
-                    )
+                outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
-   
+
 
 def processPixels(
     leftDispMap,
@@ -295,9 +294,9 @@ def processPixels(
                 outputScore[r][c] = name_to_rgb(code_2_color["definitelyWrongUnknown"])
                 continue
             occlusion = pixelIsOccluded(r, c, leftDispMap, rightDispMap)
-            if occlusion == "OOB": # TODO: should probably be counted with the other disps
+            if occlusion == "OOB":
                 outputScore[r][c] = name_to_rgb(code_2_color["outOfBoundsOcclusion"])
-            elif occlusion == "OCC": # TODO: should probably be counted with the other disps
+            elif occlusion == "OCC":
                 outputScore[r][c] = name_to_rgb(code_2_color["uncertainOcclusion"])
                 # TODO: use segmentation to identify whether some of these occluded pixels make sense
             elif occlusion == "OCC_ERR":
