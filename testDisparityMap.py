@@ -336,7 +336,7 @@ def main():
                 name=sys.argv[0]
             )
         )
-        exit
+        exit()
 
     leftDispMap = cv2.imread(leftDispMapFile, 0)  # grayscale mode
     rightDispMap = cv2.imread(rightDispMapFile, 0)  # grayscale mode
