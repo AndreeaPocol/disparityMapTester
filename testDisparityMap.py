@@ -96,7 +96,7 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
             print("[{} ... {}] size {} ".format(range[0], range[-1], len(range)))
     if numRanges == 2:
         diff = ranges[1][0] - ranges[0][-1]
-        # the outlier is the smallest range, provided there's a subtantial gap
+        # the outlier is the smallest range, provided there's a substantial gap
         if diff > OUTLIER_THRESH:
             if len(ranges[1]) > len(ranges[0]):
                 outliers = ranges[0]
@@ -229,12 +229,10 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
 def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
     segmentDispDict = {}
     segmentCoordsDict = {}
-
-    # globalOutliers, lower, upper = detectOutliersStatistically(globaDisps, leftDispMap)
-    # plotHistogram(globaDisps, lower, upper)
-    data = list(
-        filter(lambda x: x > 0, list(np.concatenate(np.asarray(leftDispMap)).flat))
-    )
+    globalDisps = list(np.concatenate(np.asarray(leftDispMap)).flat)
+    data = list(filter(lambda x: x > 0, globalDisps))
+    # globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
+    # plotHistogram(globalDisps, lower, upper)
     globalOutliers = detectOutliersByContinuityHeuristic(data, verbose=True)
 
     for r in range(0, rows):
