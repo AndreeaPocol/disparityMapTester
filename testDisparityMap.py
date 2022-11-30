@@ -11,7 +11,9 @@ from webcolors import name_to_rgb
 from scipy.interpolate import interp1d
 import seaborn as sns
 
+
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
+OUTLIER_THRESH = 3
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -44,8 +46,28 @@ def displayLegend():
 def pixelIsUnknown(pixelDisp):
     return pixelDisp == 0
 
+def group(L):
+    first = last = L[0]
+    firstIdx = lastIdx = c = 0
+    for n in L[1:]:
+        c += 1
+        if (n - 1 == last) or (n == last): # Part of the group, bump the end
+            last = n
+            lastIdx = c
+        else: # Not part of the group, yield current group and start a new
+            if firstIdx == lastIdx:
+                yield [L[firstIdx]]
+            else:
+                yield L[firstIdx:lastIdx]
+            first = last = n
+            firstIdx = lastIdx = c
+    if firstIdx == lastIdx:
+        yield [L[firstIdx]]
+    else:
+        yield L[firstIdx:lastIdx] # Yield the last group
 
-def detectOutliers(data, leftDispMap):
+
+def detectOutliersStatistically(data, leftDispMap):
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
@@ -62,10 +84,34 @@ def detectOutliers(data, leftDispMap):
     return outliers, lower, upper
 
 
+def detectOutliersByContinuityHeuristic(data, verbose=True):
+    outliers = []
+    data.sort()
+    ranges = list(group(data))
+    numRanges = len(ranges)
+    if verbose:
+        print("\n", "num ranges: ", numRanges, "\n", "[ ")
+        for range in ranges:
+            print("[{} ... {}] ".format(range[0], range[-1]))
+    if numRanges == 2:
+        diff = ranges[1][0] - ranges[0][-1]
+        # the outlier is the smallest range, provided there's a subtantial gap
+        if diff > OUTLIER_THRESH:
+            if len(ranges[1]) > len(ranges[0]):
+                outliers = ranges[0]
+            elif len(ranges[1]) < len(ranges[0]):
+                outliers = ranges[1]
+            if verbose:
+                print("OUTLIER(S) FOUND: ", outliers, "\n")
+    if numRanges > 2:
+        longestRange = max(ranges, key=len)
+        # TODO: Finish me
+    return outliers
+
+
 def plotHistogram(disps, lower, upper):
     # plt parameters
     plt.rcParams['figure.figsize'] = (10.0, 10.0)
-    plt.style.use('seaborn-dark-palette')
     plt.rcParams['axes.grid'] = True
     plt.rcParams["patch.force_edgecolor"] = True
 
@@ -106,7 +152,7 @@ def showColourDist(img):
 def segment(img):
     # Applying Simple Linear Iterative
     # Clustering on the image
-    segments = slic(img, n_segments=800, compactness=20)
+    segments = slic(img, n_segments=1000, compactness=20)
     # Converts a label image into
     # an RGB color image for visualizing
     # the labeled regions.
@@ -173,12 +219,60 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
         return "NO_OCC"
 
 
+def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
+    segmentDispDict = {}
+    segmentCoordsDict = {}
+
+    # globalOutliers, lower, upper = detectOutliersStatistically(globaDisps, leftDispMap)
+    # plotHistogram(globaDisps, lower, upper)
+    data = list(np.concatenate(np.asarray(leftDispMap)).flat)
+    globalOutliers = detectOutliersByContinuityHeuristic(data, verbose=True)
+
+    for r in range(0, rows):
+        for c in range(0, cols):
+            curPixelDisp = leftDispMap[r][c]
+            if curPixelDisp in globalOutliers:
+                outputScore[r][c] = name_to_rgb(
+                        code_2_color["maybeWrongGlobalOutlier"]
+                    )
+            # Update segment disparities in segmentDispDict.
+            # segmentId is the label. We want to know all the
+            # disparities in the segment with id segmentId
+            segmentId = segments[r][c]
+            segmentDisps = [curPixelDisp]
+            if segmentId in segmentDispDict:
+                segmentDisps = segmentDisps + segmentDispDict[segmentId]
+            segmentDispDict[segmentId] = segmentDisps
+            # Update segment coordinates.
+            # We want to know all the pixels
+            # in the segment with id segmentId
+            # and their coordinates.
+            segmentCoords = [[r, c]]
+            if segmentId in segmentCoordsDict:
+                segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
+            segmentCoordsDict[segmentId] = segmentCoords
+    for segmentId in segmentDispDict:
+        disps = segmentDispDict[segmentId]
+        segmentOutliers = detectOutliersByContinuityHeuristic(disps, verbose=False)
+        for pixel in segmentCoordsDict[segmentId]:
+            x = pixel[0]
+            y = pixel[1]
+            if leftDispMap[x][y] in segmentOutliers:
+                outputScore[x][y] = name_to_rgb(
+                        code_2_color["maybeWrongSegmentOutlier"]
+                    )
+            else:
+                outputScore[x][y] = name_to_rgb(
+                        code_2_color["maybeRight"]
+                    )
+    # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+   
+
 def processPixels(
     leftDispMap,
     rightDispMap,
     outputScore,
     segments,
-    segmentedImage,
     leftOriginalImage,
     rightOriginalImage,
 ):
@@ -186,11 +280,7 @@ def processPixels(
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
-    assert (segments.shape[0] == rows) and (segments.shape[1] == cols)
-
-    segmentDispDict = {}
-    segmentCoordsDict = {}
-    disps = []
+    markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols)
 
     for r in range(0, rows):
         for c in range(0, cols):
@@ -220,47 +310,6 @@ def processPixels(
                 outputScore[r][c] = name_to_rgb(
                     code_2_color["maybeWrongFuseColorMismatch"]
                 )
-            else:
-                disps.append(curPixelDisp)
-                # Update segment disparities in segmentDispDict.
-                # segmentId is the label. We want to know all the
-                # disparities in the segment with id segmentId
-                segmentId = segments[r][c]
-                segmentDisps = [curPixelDisp]
-                if segmentId in segmentDispDict:
-                    segmentDisps = segmentDisps + segmentDispDict[segmentId]
-                segmentDispDict[segmentId] = segmentDisps
-                # Update segment coordinates.
-                # We want to know all the pixels
-                # in the segment with id segmentId
-                # and their coordinates.
-                segmentCoords = [[r, c]]
-                if segmentId in segmentCoordsDict:
-                    segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
-                segmentCoordsDict[segmentId] = segmentCoords
-
-    # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
-
-    # globalOutliers, lower, upper = detectOutliers(disps, leftDispMap)
-    # plotHistogram(disps, lower, upper)
-
-    for segmentId in segmentDispDict:
-        disps = segmentDispDict[segmentId]
-        segmentOutliers, lower, upper = detectOutliers(
-            np.array(disps), leftDispMap
-        )
-        plotHistogram(disps, lower, upper)
-        for pixel in segmentCoordsDict[segmentId]:
-            x = pixel[0]
-            y = pixel[1]
-            if leftDispMap[x][y] in segmentOutliers:
-                outputScore[x][y] = name_to_rgb(
-                        code_2_color["maybeWrongSegmentOutlier"]
-                    )
-            else:
-                outputScore[x][y] = name_to_rgb(
-                        code_2_color["maybeRight"]
-                    )
 
 
 def main():
@@ -291,15 +340,12 @@ def main():
 
     segments, segmentedImage = segment(leftOriginalImage)
 
-    # cv2.imshow("Colour-segmented image", segmentedImage)
-
     # showColourDist(originalImage)
     processPixels(
         leftDispMap,
         rightDispMap,
         outputScore,
         segments,
-        segmentedImage,
         leftOriginalImage,
         rightOriginalImage,
     )
@@ -309,6 +355,7 @@ def main():
     cv2.imshow("Original (left) disparity map", leftDispMap)
     cv2.imshow("Marked (left) disparity map", outputScore)
     cv2.imshow("Original (left) image", leftOriginalImage)
+    cv2.imshow("Segmented (left) image", segmentedImage)
     displayLegend()
     cv2.waitKey(0)  # waits until a key is pressed
     cv2.destroyAllWindows()
