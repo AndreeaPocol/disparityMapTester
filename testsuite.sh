@@ -6,9 +6,20 @@
 # Run with `report` to run on all test images and
 # provide a specific image name to run once. 
 
+clear
+
 images=(
     teddy
-    art
+)
+
+generators=(
+    anu
+    asw
+    bp
+    dp
+    gc
+    rh
+    scanline
 )
 
 if [ $# -ge 1 ] ; then
@@ -16,9 +27,15 @@ if [ $# -ge 1 ] ; then
         echo "Generating a report of all outputs..."
         mkdir report
         for i in "${images[@]}"; do
-        python3 testDisparityMap.py inputs/$i/input/left_disparity_$i_bad.png inputs/$i/input/right_disparity_$i_bad.png inputs/$i/$i_left.png inputs/$i/$i_right.png inputs/$i/output/left_disparity_$i_bad_score.png
+            for j in "${generators[@]}"; do
+                python3 testDisparityMap.py inputs/$i/$j/left_disparity_$i.png inputs/$i/$j/right_disparity_$i.png inputs/$i/$i_L.png inputs/$i/$i_R.png report/left_disparity_$i_$j_score.png
+            done
         done
     else
         echo "Running single test and writing output to test_data..."
-        python3 testDisparityMap.py inputs/$1/input/left_disparity_$1_bad.png inputs/$1/input/right_disparity_$1_bad.png inputs/$1/$1_left.png inputs/$1/$1_right.png inputs/$1/output/left_disparity_$1_bad_score.png
+        mkdir $1
+        for j in "${generators[@]}"; do
+            python3 testDisparityMap.py inputs/$1/$j/left_disparity_$1.png inputs/$1/$j/right_disparity_$1.png inputs/$1/$1_L.png inputs/$1/$1_R.png $1/left_disparity_$1_${j}_score.png
+        done
+    fi
 fi
