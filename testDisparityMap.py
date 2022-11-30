@@ -14,6 +14,7 @@ import seaborn as sns
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 OUTLIER_THRESH = 3
+DISPLAY = False
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -355,13 +356,15 @@ def main():
 
     outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
 
-    cv2.imshow("Original (left) disparity map", leftDispMap)
-    cv2.imshow("Marked (left) disparity map", outputScore)
-    cv2.imshow("Original (left) image", leftOriginalImage)
-    cv2.imshow("Segmented (left) image", segmentedImage)
-    displayLegend()
-    cv2.waitKey(0)  # waits until a key is pressed
-    cv2.destroyAllWindows()
+    if DISPLAY:
+        cv2.imshow("Original (left) disparity map", leftDispMap)
+        cv2.imshow("Marked (left) disparity map", outputScore)
+        cv2.imshow("Original (left) image", leftOriginalImage)
+        cv2.imshow("Segmented (left) image", segmentedImage)
+        displayLegend()
+        cv2.waitKey(0)  # waits until a key is pressed
+        cv2.destroyAllWindows()
+
     cv2.imwrite(dispMapScoreOutputFile, outputScore)
 
 
