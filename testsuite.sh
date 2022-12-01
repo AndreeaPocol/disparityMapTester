@@ -10,6 +10,8 @@ clear
 
 images=(
     teddy
+    baby
+    aloe
 )
 
 generators=(
@@ -36,6 +38,7 @@ if [ $# -ge 1 ] ; then
         mkdir $1
         for j in "${generators[@]}"; do
             python3 testDisparityMap.py inputs/$1/$j/left_disparity_$1.png inputs/$1/$j/right_disparity_$1.png inputs/$1/$1_L.png inputs/$1/$1_R.png $1/left_disparity_$1_${j}_score.png
+            python3 computeDisparityMapScore.py $1/left_disparity_$1_${j}_score.png
         done
     fi
 fi
