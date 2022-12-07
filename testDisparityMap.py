@@ -332,7 +332,7 @@ def main():
         dispMapScoreOutputFile = sys.argv[5]
     else:
         print(
-            "Usage: {name} [ leftDispMapFile rightDispMapFile originalImage dispMapScoreOutputFile ]".format(
+            "Usage: {name} [ leftDispMapFile rightDispMapFile leftOriginalImageFile rightOriginalImageFile dispMapScoreOutputFile ]".format(
                 name=sys.argv[0]
             )
         )
