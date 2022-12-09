@@ -6,40 +6,43 @@
 # Run with `report` to run on all test images and
 # provide a specific image name to run once. 
 
+clear
 
 images=(
     aloe
     art
-    # baby
-    # bowling1
-    # bowling2
-    # lines
-    # teddy
-    # box
-    # cat
-    # cup
-    # cups
-    # globe1
-    # globe2
-    # grapes
-    # lilies
-    # peaches
-    # reflections
-    # rocks
-    # roses
-    # sail
-    # sphere
-    # woods
+    baby
+    bowling1
+    bowling2
+    lines
+    teddy
+    box
+    cat
+    cup
+    cups
+    globe1
+    globe2
+    grapes
+    lilies
+    peaches
+    reflections
+    rock
+    roses
+    sail
+    sphere
+    woods
 )
 
 generators=(
-    anu
-    asw
-    bp
-    dp
-    gc
-    rh
-    scanline
+    # anu
+    # asw
+    # bp
+    # dp
+    # gc
+    # rh
+    # scanline
+    BM
+    SGBM
 )
 
 if [ $# -ge 1 ] ; then
@@ -55,7 +58,11 @@ if [ $# -ge 1 ] ; then
         echo "Generating disparity maps"
         mkdir $1
         for i in "${images[@]}"; do
-            python3 generateDisparityMaps.py inputs/$i/${i}_L.png inputs/$i/${i}_R.png inputs/$i/opencv1/left_disparity_${i}.png inputs/$i/opencv1/right_disparity_${i}.png
+            cd inputs/$i/
+            mkdir BM
+            mkdir SGBM
+            cd ../..
+            python3 generateDisparityMaps.py inputs/$i/${i}_L.png inputs/$i/${i}_R.png inputs/$i/opencv/left_disparity_${i}.png inputs/$i/opencv/right_disparity_${i}.png
         done
     else
         echo "Running single test and writing output to test_data..."
