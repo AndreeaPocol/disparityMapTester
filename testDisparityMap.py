@@ -49,6 +49,8 @@ def pixelIsUnknown(pixelDisp):
 
 
 def group(L):
+    if len(L) == 0:
+        return []
     first = last = L[0]
     firstIdx = lastIdx = c = 0
     for n in L[1:]:
