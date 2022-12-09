@@ -25,9 +25,13 @@ def main():
             )
         )
         exit()
-    outputScore = cv2.imread(outputScoreFile, 1)
-    outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
-    cv2.waitKey(0)  # waits until a key is pressed
+    try:
+        outputScore = cv2.imread(outputScoreFile, 1)
+        outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+    except:
+        print("ERROR: Unable to read file ", outputScoreFile)
+        exit()
+
 
     rows = outputScore.shape[0]
     cols = outputScore.shape[1]
