@@ -108,7 +108,7 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
             elif len(ranges[1]) < len(ranges[0]):
                 outliers = ranges[1]
     if numRanges > 2:
-        # the outlier is is the first or last range in the sorted list of ranges,
+        # the outlier is the first or last range in the sorted list of ranges,
         # provided there's a substantial gap
         if (ranges[1][0] - ranges[0][-1]) > OUTLIER_THRESH:
             if len(ranges[1]) > len(ranges[0]):
