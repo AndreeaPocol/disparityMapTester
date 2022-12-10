@@ -1,3 +1,6 @@
+# Examples of 3D Images
+See `inputs` for an assorted test bed of 3D images. 
+
 # Testing Disparity Maps
 
 ## Executable: `testDisparityMap.py`
