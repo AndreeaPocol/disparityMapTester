@@ -15,9 +15,18 @@ python3 testDisparityMap.py <leftDispMapFile> <rightDispMapFile> <leftOriginalIm
 ```
 python3 testDisparityMap.py inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/left_disparity_art_bad_score.png
 ```
-<img src="inputs/art/art_L.png" alt="original_image" width="165"/>
-<img src="inputs/art/input/left_disparity_art_bad.png" alt="disparity_map" width="165"/>
-<img src="results/final_score.png" alt="final_score" width="165"/>
+
+<div class="row">
+  <div class="column">
+    <img src="inputs/art/art_L.png" alt="original_image" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="inputs/art/input/left_disparity_art_bad.png" alt="disparity_map" style="width:100%">
+  </div>
+  <div class="column">
+    <img src="results/final_score.png" alt="final_score" style="width:100%">
+  </div>
+</div>
 
 
 ### *Overview:*
