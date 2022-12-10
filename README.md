@@ -15,10 +15,10 @@ python3 testDisparityMap.py <leftDispMapFile> <rightDispMapFile> <leftOriginalIm
 ```
 python3 testDisparityMap.py inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/left_disparity_art_bad_score.png
 ```
+<img src="inputs/art/art_L.png" alt="original_image" width="165"/>
+<img src="inputs/art/input/left_disparity_art_bad.png" alt="disparity_map" width="165"/>
+<img src="results/final_score.png" alt="final_score" width="165"/>
 
-![image](inputs/art/art_L.png)
-![image](inputs/art/input/left_disparity_art_bad.png)
-![image](results/final_score.png)
 
 ### *Overview:*
 Produces a visual score in the form of a color-coded image. 
