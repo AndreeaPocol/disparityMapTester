@@ -1,3 +1,5 @@
+This is a testing framework for stereo matching algorithms. *This work has been patented.*
+
 # Examples of 3D Images
 See `inputs` for an assorted test bed of 3D images. 
 
