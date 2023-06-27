@@ -10,11 +10,11 @@ from matplotlib import colors
 from webcolors import name_to_rgb
 from scipy.interpolate import interp1d
 import seaborn as sns
-
+import pyransac3d as pyrsc
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 OUTLIER_THRESH = 3
-DISPLAY = False
+DISPLAY = True
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -234,6 +234,7 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
 def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
     segmentDispDict = {}
     segmentCoordsDict = {}
+    segmentOutliersDict = {}
     globalDisps = list(np.concatenate(np.asarray(leftDispMap)).flat)
     data = list(filter(lambda x: x > 0, globalDisps))
     # globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
@@ -264,16 +265,49 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
     for segmentId in segmentDispDict:
         disps = list(filter(lambda x: x > 0, segmentDispDict[segmentId]))
         segmentOutliers = detectOutliersByContinuityHeuristic(disps, verbose=False)
+        segmentOutliersDict[segmentId] = segmentOutliers
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
-            if leftDispMap[x][y] in segmentOutliers:
+            segmentPixelDisp = leftDispMap[x][y]
+            if segmentPixelDisp in segmentOutliers:
                 outputScore[x][y] = name_to_rgb(
                     code_2_color["maybeWrongSegmentOutlier"]
                 )
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+    return segmentCoordsDict, segmentOutliersDict
+
+
+def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispMap):
+    for segmentId in segmentCoordsDict:
+        # construct the plane
+        points = []
+        for pixel in segmentCoordsDict[segmentId]:
+            x = pixel[0]
+            y = pixel[1]
+            segmentPixelDisp = leftDispMap[x][y]
+            newPoint = [x, y, segmentPixelDisp]
+            points.append(newPoint)
+        plane = pyrsc.Plane()
+        best_eq, best_inliers = plane.fit(np.array(points), 0.01)
+        print("Plane equation: ", best_eq)
+        # the plane equation is of the form: Ax+By+Cz+D, e.g., [0.720, -0.253, 0.646, 1.100]
+        A = best_eq[0]
+        B = best_eq[1]
+        C = best_eq[2]
+        D = best_eq[3]
+        # (A * x) + (B * y) + (C * z) + D = 0
+        z = (-D - (A * x) - (B * y))/C
+
+        # use the plane to correct outliers
+        for pixel in segmentCoordsDict[segmentId]:
+            x = pixel[0]
+            y = pixel[1]
+            segmentPixelDisp = leftDispMap[x][y]
+            if segmentPixelDisp in segmentOutliersDict[segmentId] or segmentPixelDisp == 0:
+                newLeftDispMap[x][y] = z
 
 
 def processPixels(
@@ -283,12 +317,14 @@ def processPixels(
     segments,
     leftOriginalImage,
     rightOriginalImage,
+    newLeftDispMap
 ):
 
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
-    markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols)
+    segmentCoordsDict, segmentOutliers = markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols)
+    fixDispMap(segmentCoordsDict, segmentOutliers, leftDispMap, newLeftDispMap)
 
     for r in range(0, rows):
         for c in range(0, cols):
@@ -321,7 +357,6 @@ def processPixels(
 
 
 def main():
-
     leftDispMapFile = ""
     rightDispMapFile = ""
     leftOriginalImageFile = ""
@@ -334,7 +369,11 @@ def main():
         dispMapScoreOutputFile = sys.argv[5]
     else:
         print(
-            "Usage: {name} [ leftDispMapFile rightDispMapFile leftOriginalImageFile rightOriginalImageFile dispMapScoreOutputFile ]".format(
+            "Usage: {name} [ leftDispMapFile \
+            rightDispMapFile \
+            leftOriginalImageFile \
+            rightOriginalImageFile \
+            dispMapScoreOutputFile ]".format(
                 name=sys.argv[0]
             )
         )
@@ -345,7 +384,7 @@ def main():
     outputScore = cv2.imread(leftDispMapFile, 1)  # colour mode
     leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)
     rightOriginalImage = cv2.imread(rightOriginalImageFile, 1)
-
+    newLeftDispMap = leftDispMap.copy()
     segments, segmentedImage = segment(leftOriginalImage)
 
     # showColourDist(originalImage)
@@ -356,6 +395,7 @@ def main():
         segments,
         leftOriginalImage,
         rightOriginalImage,
+        newLeftDispMap
     )
 
     outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
@@ -365,6 +405,7 @@ def main():
         cv2.imshow("Marked (left) disparity map", outputScore)
         cv2.imshow("Original (left) image", leftOriginalImage)
         cv2.imshow("Segmented (left) image", segmentedImage)
+        cv2.imshow("Corrected (left) disparity map", newLeftDispMap)
         displayLegend()
         cv2.waitKey(0)  # waits until a key is pressed
         cv2.destroyAllWindows()
