@@ -40,7 +40,7 @@ def segmentViaKMeansColorQuant(img):
     n_colors = 20
     img = np.array(img, dtype=np.float64) / 255
 
-    # Load Image and transform to a 2D numpy array.
+    # load image and transform to a 2D numpy array.
     w, h, d = original_shape = tuple(img.shape)
     assert d == 3
     image_array = np.reshape(img, (w * h, d))
@@ -50,7 +50,7 @@ def segmentViaKMeansColorQuant(img):
     kmeans = KMeans(n_clusters=n_colors, n_init="auto", random_state=0).fit(
         image_array_sample
     )
-    # Get labels for all points
+    # get labels for all points
     print("Predicting color indices on the full image (k-means)")
     labels = kmeans.predict(image_array)
     codebook_random = shuffle(image_array, random_state=0, n_samples=n_colors)
@@ -197,17 +197,11 @@ def showColourDist(img):
 
 def segment(img):
     if segmentMethod == "segmentSLIC":
-        # Canny Edge Detection
-        img_blur = cv2.GaussianBlur(img, (3,3), 0) 
-        edges = cv2.Canny(image=img_blur, threshold1=100, threshold2=200) 
-        edges = cv2.cvtColor(edges,cv2.COLOR_GRAY2RGB)
-        dst = cv2.addWeighted(img,1.0,edges,0.7,0)
-        cv2.imshow('Canny Edge Detection', dst)
-        cv2.waitKey(0)
-        # Applying Simple Linear Iterative Clustering on the image
-        segments = slic(dst, n_segments=900, compactness=10)
-        # Converts a label image into an RGB color image for visualizing the labeled regions.
-        return segments, label2rgb(segments, dst, kind="avg")
+        # applying Simple Linear Iterative Clustering on the image
+        segments = slic(img, n_segments=900, compactness=10)
+        print(segments)
+        # converts a label image into an RGB color image for visualizing the labeled regions.
+        return segments, label2rgb(segments, img, kind="avg")
     if segmentMethod == "segmentKMeans":
         segments = segmentViaKMeansColorQuant(img)
         exit(0)
