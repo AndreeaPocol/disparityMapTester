@@ -11,10 +11,17 @@ from webcolors import name_to_rgb
 from scipy.interpolate import interp1d
 import seaborn as sns
 import pyransac3d as pyrsc
+from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances_argmin
+from sklearn.datasets import load_sample_image
+from sklearn.utils import shuffle
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 OUTLIER_THRESH = 3
 DISPLAY = True
+
+segmentMethod = "segmentKMeans"
+# segmentMethod = "segmentSLIC"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -29,6 +36,35 @@ code_2_color = {
 }
 
 
+def segmentViaKMeansColorQuant(img):
+    n_colors = 20
+    img = np.array(img, dtype=np.float64) / 255
+
+    # Load Image and transform to a 2D numpy array.
+    w, h, d = original_shape = tuple(img.shape)
+    assert d == 3
+    image_array = np.reshape(img, (w * h, d))
+
+    print("Fitting model on a small sub-sample of the data")
+    image_array_sample = shuffle(image_array, random_state=0, n_samples=1_000)
+    kmeans = KMeans(n_clusters=n_colors, n_init="auto", random_state=0).fit(
+        image_array_sample
+    )
+    # Get labels for all points
+    print("Predicting color indices on the full image (k-means)")
+    labels = kmeans.predict(image_array)
+    codebook_random = shuffle(image_array, random_state=0, n_samples=n_colors)
+    print("Predicting color indices on the full image (random)")
+    labels_random = pairwise_distances_argmin(codebook_random, image_array, axis=0)
+    codebook = kmeans.cluster_centers_
+    recreated_img = codebook[labels].reshape(w, h, -1)
+
+    # cv2.imshow(f"Quantized image ({n_colors} colors, K-Means)", recreated_img)
+    recreated_img = np.array(recreated_img, dtype=np.float64) * 255
+    cv2.imwrite("color-corrected-img.png", recreated_img)
+    exit(0)
+
+
 def displayLegend():
     handles = []
     for code, color in code_2_color.items():
@@ -40,8 +76,6 @@ def displayLegend():
     plt.legend(handles=handles)
     plt.title = "Legend"
     plt.show()
-    cv2.waitKey(0)  # waits until a key is pressed
-    cv2.destroyAllWindows()
 
 
 def pixelIsUnknown(pixelDisp):
@@ -162,13 +196,21 @@ def showColourDist(img):
 
 
 def segment(img):
-    # Applying Simple Linear Iterative
-    # Clustering on the image
-    segments = slic(img, n_segments=800, compactness=20)
-    # Converts a label image into
-    # an RGB color image for visualizing
-    # the labeled regions.
-    return segments, label2rgb(segments, img, kind="avg")
+    if segmentMethod == "segmentSLIC":
+        # Canny Edge Detection
+        img_blur = cv2.GaussianBlur(img, (3,3), 0) 
+        edges = cv2.Canny(image=img_blur, threshold1=100, threshold2=200) 
+        edges = cv2.cvtColor(edges,cv2.COLOR_GRAY2RGB)
+        dst = cv2.addWeighted(img,1.0,edges,0.7,0)
+        cv2.imshow('Canny Edge Detection', dst)
+        cv2.waitKey(0)
+        # Applying Simple Linear Iterative Clustering on the image
+        segments = slic(dst, n_segments=900, compactness=10)
+        # Converts a label image into an RGB color image for visualizing the labeled regions.
+        return segments, label2rgb(segments, dst, kind="avg")
+    if segmentMethod == "segmentKMeans":
+        segments = segmentViaKMeansColorQuant(img)
+        exit(0)
 
 
 def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
