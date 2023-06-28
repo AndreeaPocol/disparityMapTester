@@ -11,17 +11,19 @@ from webcolors import name_to_rgb
 from scipy.interpolate import interp1d
 import seaborn as sns
 import pyransac3d as pyrsc
-from sklearn.cluster import KMeans
+from sklearn.cluster import KMeans, MeanShift, estimate_bandwidth
 from sklearn.metrics import pairwise_distances_argmin
 from sklearn.datasets import load_sample_image
 from sklearn.utils import shuffle
+
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 OUTLIER_THRESH = 3
 DISPLAY = True
 
-segmentMethod = "segmentKMeans"
+# segmentMethod = "segmentKMeans"
 # segmentMethod = "segmentSLIC"
+segmentMethod = "segmentMeanShift"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -36,7 +38,44 @@ code_2_color = {
 }
 
 
-def segmentViaKMeansColorQuant(img):
+def segmentMeanShift(img):
+    # reduce noise
+    img = cv2.medianBlur(img, 3)
+
+    # flatten the image
+    flat_image = img.reshape((-1,3))
+    flat_image = np.float32(flat_image)
+
+    # meanshift
+    bandwidth = estimate_bandwidth(flat_image, quantile=.02, n_samples=3000)
+    ms = MeanShift(bandwidth=bandwidth, max_iter=800, bin_seeding=True)
+    ms.fit(flat_image)
+    labeled = ms.labels_
+    
+    # get number of segments
+    segments = np.unique(labeled)
+    print('Number of segments: ', segments.shape[0])
+
+    # get the average color of each segment
+    total = np.zeros((segments.shape[0], 3), dtype=float)
+    count = np.zeros(total.shape, dtype=float)
+    for i, label in enumerate(labeled):
+        total[label] = total[label] + flat_image[i]
+        count[label] += 1
+    avg = total/count
+    avg = np.uint8(avg)
+
+    # cast the labeled image into the corresponding average color
+    res = avg[labeled]
+    result = res.reshape((img.shape))
+
+    rows = img.shape[0]
+    cols = img.shape[1]
+    labeled = labeled.reshape((rows, cols))
+    return labeled, result
+
+
+def segmentKMeansColorQuant(img):
     n_colors = 20
     img = np.array(img, dtype=np.float64) / 255
 
@@ -63,6 +102,39 @@ def segmentViaKMeansColorQuant(img):
     recreated_img = np.array(recreated_img, dtype=np.float64) * 255
     cv2.imwrite("color-corrected-img.png", recreated_img)
     exit(0)
+
+
+def segment(img):
+    if segmentMethod == "segmentSLIC":
+        # applying Simple Linear Iterative Clustering on the image
+        segments = slic(img, n_segments=900, compactness=10)
+        print(segments)
+        # converts a label image into an RGB color image for visualizing the labeled regions.
+        return segments, label2rgb(segments, img, kind="avg")
+    if segmentMethod == "segmentKMeans": # TODO: finish
+        return segmentKMeansColorQuant(img)
+    if segmentMethod == "segmentMeanShift":
+        return segmentMeanShift(img)
+
+
+def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
+    rows = segmentedImage.shape[0]
+    cols = segmentedImage.shape[1]
+    # for every segment...
+    numSegments = len(segmentCoordsDict)
+    print("Number of segments: {}".format(numSegments))
+    for segmentId, segmentCoords in segmentCoordsDict.items():
+        curSegment = np.copy(segmentedImage)
+        # find only pixels pertaining to a single segment
+        # (the rest should be black)
+        for r in range(0, rows):
+            for c in range(0, cols):
+                if [r, c] not in segmentCoords:
+                    curSegment[r][c] = (0, 0, 0)
+        if len(segmentDispDict[segmentId]) > 4:
+            cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
+            # plotHistogram(segmentDispDict[segmentId])
+            cv2.waitKey(0)
 
 
 def displayLegend():
@@ -195,38 +267,6 @@ def showColourDist(img):
     plt.show()
 
 
-def segment(img):
-    if segmentMethod == "segmentSLIC":
-        # applying Simple Linear Iterative Clustering on the image
-        segments = slic(img, n_segments=900, compactness=10)
-        print(segments)
-        # converts a label image into an RGB color image for visualizing the labeled regions.
-        return segments, label2rgb(segments, img, kind="avg")
-    if segmentMethod == "segmentKMeans":
-        segments = segmentViaKMeansColorQuant(img)
-        exit(0)
-
-
-def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
-    rows = segmentedImage.shape[0]
-    cols = segmentedImage.shape[1]
-    # for every segment...
-    numSegments = len(segmentCoordsDict)
-    print("Number of segments: {}".format(numSegments))
-    for segmentId, segmentCoords in segmentCoordsDict.items():
-        curSegment = np.copy(segmentedImage)
-        # find only pixels pertaining to a single segment
-        # (the rest should be black)
-        for r in range(0, rows):
-            for c in range(0, cols):
-                if [r, c] not in segmentCoords:
-                    curSegment[r][c] = (0, 0, 0)
-        if len(segmentDispDict[segmentId]) > 4:
-            cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
-            plotHistogram(segmentDispDict[segmentId])
-            cv2.waitKey(0)
-
-
 def pixelDoesNotFuse(c, d):
     return (c - d) < 0
 
@@ -267,7 +307,7 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
         return "NO_OCC"
 
 
-def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
+def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage):
     segmentDispDict = {}
     segmentCoordsDict = {}
     segmentOutliersDict = {}
@@ -312,7 +352,8 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols):
                 )
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
-    # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+    displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+    exit(0)
     return segmentCoordsDict, segmentOutliersDict
 
 
@@ -351,6 +392,7 @@ def processPixels(
     rightDispMap,
     outputScore,
     segments,
+    segmentedImage,
     leftOriginalImage,
     rightOriginalImage,
     newLeftDispMap
@@ -359,7 +401,7 @@ def processPixels(
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
-    segmentCoordsDict, segmentOutliers = markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols)
+    segmentCoordsDict, segmentOutliers = markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
     fixDispMap(segmentCoordsDict, segmentOutliers, leftDispMap, newLeftDispMap)
 
     for r in range(0, rows):
@@ -429,6 +471,7 @@ def main():
         rightDispMap,
         outputScore,
         segments,
+        segmentedImage,
         leftOriginalImage,
         rightOriginalImage,
         newLeftDispMap
