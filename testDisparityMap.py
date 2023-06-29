@@ -109,16 +109,11 @@ def segmentOpenCVKMeans(img):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
     K = 20
     ret,label,center=cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
-    # Now convert back into uint8, and make original image
+    # now convert back into uint8, and make original image
     center = np.uint8(center)
     res = center[label.flatten()]
     resultImage = res.reshape((img.shape))
-    # cv2.imshow('resultImage',resultImage)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
     labels = label.reshape((img.shape[0], img.shape[1]))
-    # print(labels)
-    # exit(0)
     return labels, resultImage
 
 
