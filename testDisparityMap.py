@@ -126,7 +126,7 @@ def segmentSLIC(img):
 
 def segment(img):
     if segmentMethod == "segmentSLIC":
-        return segmentSLIC
+        return segmentSLIC(img)
     if segmentMethod == "segmentKMeans":
         return segmentKMeansColorQuant(img)
     if segmentMethod == "segmentMeanShift":
