@@ -24,7 +24,8 @@ DISPLAY = True
 # segmentMethod = "segmentKMeans"
 # segmentMethod = "segmentSLIC"
 # segmentMethod = "segmentMeanShift"
-segmentMethod = "hybrid"
+# segmentMethod = "hybrid"
+segmentMethod = "segmentOpenCVKMeans"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -100,11 +101,33 @@ def segmentKMeansColorQuant(img):
     return segments, recreatedImg
 
 
+def segmentOpenCVKMeans(img):
+    Z = img.reshape((-1,3))
+    # convert to np.float32
+    Z = np.float32(Z)
+    # define criteria, number of clusters(K) and apply kmeans()
+    criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+    K = 20
+    ret,label,center=cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+    # Now convert back into uint8, and make original image
+    center = np.uint8(center)
+    res = center[label.flatten()]
+    resultImage = res.reshape((img.shape))
+    # cv2.imshow('resultImage',resultImage)
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
+    labels = label.reshape((img.shape[0], img.shape[1]))
+    # print(labels)
+    # exit(0)
+    return labels, resultImage
+
+
 def segmentSLIC(img):
     # applying Simple Linear Iterative Clustering on the image
     segments = slic(img, n_segments=900, compactness=10)
     # converts a label image into an RGB color image for visualizing the labeled regions.
     return segments, label2rgb(segments, img, kind="avg")
+
 
 def segment(img):
     if segmentMethod == "segmentSLIC":
@@ -113,6 +136,8 @@ def segment(img):
         return segmentKMeansColorQuant(img)
     if segmentMethod == "segmentMeanShift":
         return segmentMeanShift(img)
+    if segmentMethod == "segmentOpenCVKMeans":
+        return segmentOpenCVKMeans(img)
     if segmentMethod == "hybrid":
         segments, segmentedImg = segmentMeanShift(img)
         return segmentSLIC(segmentedImg)
@@ -353,7 +378,8 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmente
                 )
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
-    # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+    displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+
     return segmentCoordsDict, segmentOutliersDict
 
 
