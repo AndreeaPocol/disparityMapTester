@@ -21,9 +21,10 @@ COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 OUTLIER_THRESH = 3
 DISPLAY = True
 
-segmentMethod = "segmentKMeans"
+# segmentMethod = "segmentKMeans"
 # segmentMethod = "segmentSLIC"
 # segmentMethod = "segmentMeanShift"
+segmentMethod = "hybrid"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -93,23 +94,28 @@ def segmentKMeansColorQuant(img):
     print("Predicting color indices on the full image (random)")
     labels_random = pairwise_distances_argmin(codebook_random, image_array, axis=0)
     codebook = kmeans.cluster_centers_
-    recreated_img = codebook[labels].reshape(w, h, -1)
-    # cv2.imshow(f"Quantized image ({n_colors} colors, K-Means)", recreated_img)
+    recreatedImg = codebook[labels].reshape(w, h, -1)
+    # cv2.imshow(f"Quantized image ({n_colors} colors, K-Means)", recreatedImg)
     segments = labels_random.reshape((img.shape[0], img.shape[1]))
-    return segments, recreated_img
+    return segments, recreatedImg
 
+
+def segmentSLIC(img):
+    # applying Simple Linear Iterative Clustering on the image
+    segments = slic(img, n_segments=900, compactness=10)
+    # converts a label image into an RGB color image for visualizing the labeled regions.
+    return segments, label2rgb(segments, img, kind="avg")
 
 def segment(img):
     if segmentMethod == "segmentSLIC":
-        # applying Simple Linear Iterative Clustering on the image
-        segments = slic(img, n_segments=900, compactness=10)
-        print(segments)
-        # converts a label image into an RGB color image for visualizing the labeled regions.
-        return segments, label2rgb(segments, img, kind="avg")
+        return segmentSLIC
     if segmentMethod == "segmentKMeans":
         return segmentKMeansColorQuant(img)
     if segmentMethod == "segmentMeanShift":
         return segmentMeanShift(img)
+    if segmentMethod == "hybrid":
+        segments, segmentedImg = segmentMeanShift(img)
+        return segmentSLIC(segmentedImg)
 
 
 def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
