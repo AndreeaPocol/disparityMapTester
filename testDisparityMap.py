@@ -4,7 +4,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from skimage.segmentation import slic
+from skimage.segmentation import felzenszwalb, slic, quickshift, watershed
 from skimage.color import label2rgb
 from matplotlib import colors
 from webcolors import name_to_rgb
@@ -15,6 +15,7 @@ from sklearn.cluster import KMeans, MeanShift, estimate_bandwidth
 from sklearn.metrics import pairwise_distances_argmin
 from sklearn.datasets import load_sample_image
 from sklearn.utils import shuffle
+from skimage.segmentation import mark_boundaries
 
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
@@ -25,7 +26,8 @@ DISPLAY = True
 # segmentMethod = "segmentSLIC"
 # segmentMethod = "segmentMeanShift"
 # segmentMethod = "hybrid"
-segmentMethod = "segmentOpenCVKMeans"
+# segmentMethod = "segmentOpenCVKMeans"
+segmentMethod = "segmentFelzenszwalb"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -39,6 +41,15 @@ code_2_color = {
     "maybeRight": "blue",
 }
 
+
+def segmentFelzenszwalb(img):
+    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+    print(f'Felzenszwalb number of segments: {len(np.unique(segments_fz))}')
+    print(segments_fz)
+    cv2.imshow("result", mark_boundaries(img, segments_fz))
+    cv2.waitKey(0)
+    # exit(0)
+    return segments_fz, img
 
 def segmentMeanShift(img):
     # reduce noise
@@ -136,6 +147,8 @@ def segment(img):
     if segmentMethod == "hybrid":
         segments, segmentedImg = segmentMeanShift(img)
         return segmentSLIC(segmentedImg)
+    if segmentMethod == "segmentFelzenszwalb":
+        return segmentFelzenszwalb(img)
 
 
 def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
@@ -373,7 +386,7 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmente
                 )
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
-    displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
+    # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
 
     return segmentCoordsDict, segmentOutliersDict
 
@@ -390,12 +403,16 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispM
             points.append(newPoint)
         plane = pyrsc.Plane()
         best_eq, best_inliers = plane.fit(np.array(points), 0.01)
-        print("Plane equation: ", best_eq)
+        # print("Plane equation: ", best_eq)
+        if best_eq == []:
+            continue
         # the plane equation is of the form: Ax+By+Cz+D, e.g., [0.720, -0.253, 0.646, 1.100]
         A = best_eq[0]
         B = best_eq[1]
         C = best_eq[2]
         D = best_eq[3]
+        if C == 0:
+            continue
         # (A * x) + (B * y) + (C * z) + D = 0
         z = (-D - (A * x) - (B * y))/C
 
@@ -498,7 +515,8 @@ def main():
         newLeftDispMap
     )
 
-    outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+    # outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+    # segments_fz = felzenszwalb(leftOriginalImage, scale=100, sigma=0.5, min_size=50)
 
     if DISPLAY:
         cv2.imshow("Original (left) disparity map", leftDispMap)
@@ -506,6 +524,8 @@ def main():
         cv2.imshow("Original (left) image", leftOriginalImage)
         cv2.imshow("Segmented (left) image", segmentedImage)
         cv2.imshow("Corrected (left) disparity map", newLeftDispMap)
+        # cv2.imshow("leftDispMap with boundaries", mark_boundaries(leftDispMap, segments_fz))
+        # cv2.imshow("outputScore with boundaries", mark_boundaries(outputScore, segments_fz))        
         displayLegend()
         cv2.waitKey(0)  # waits until a key is pressed
         cv2.destroyAllWindows()
