@@ -16,6 +16,8 @@ from sklearn.metrics import pairwise_distances_argmin
 from sklearn.datasets import load_sample_image
 from sklearn.utils import shuffle
 from skimage.segmentation import mark_boundaries
+from skimage.filters import sobel
+from skimage.color import rgb2gray
 
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
@@ -29,6 +31,7 @@ DISPLAY = True
 # segmentMethod = "segmentOpenCVKMeans"
 # segmentMethod = "segmentFelzenszwalb"
 segmentMethod = "segmentQuickshift"
+# segmentMethod = "segmentWatershed"
 
 
 code_2_color = {
@@ -44,6 +47,17 @@ code_2_color = {
 }
 
 
+def segmentWatershed(img):
+    gradient = sobel(rgb2gray(img))
+    segments_watershed = watershed(gradient, markers=250, compactness=0.001)
+    print(f'Watershed number of segments: {len(np.unique(segments_watershed))}')
+    print(segments_watershed)
+    cv2.imshow("result", mark_boundaries(img, segments_watershed))
+    cv2.waitKey(0)
+    # exit(0)
+    return segments_watershed, img
+
+
 def segmentFelzenszwalb(img):
     segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
     print(f'Felzenszwalb number of segments: {len(np.unique(segments_fz))}')
@@ -53,14 +67,16 @@ def segmentFelzenszwalb(img):
     # exit(0)
     return segments_fz, img
 
+
 def segmentQuickshift(img):
-    segments_quick = quickshift(img, kernel_size=5, max_dist=10, ratio=0.5)
+    segments_quick = quickshift(img, kernel_size=5, max_dist=10, ratio=0.7)
     print(f'Quickshift number of segments: {len(np.unique(segments_quick))}')
     print(segments_quick)
     cv2.imshow("result", mark_boundaries(img, segments_quick))
     cv2.waitKey(0)
     # exit(0)
     return segments_quick, img
+
 
 def segmentMeanShift(img):
     # reduce noise
@@ -162,6 +178,8 @@ def segment(img):
         return segmentFelzenszwalb(img)
     if segmentMethod == "segmentQuickshift":
         return segmentQuickshift(img)
+    if segmentMethod == "segmentWatershed":
+        return segmentWatershed(img)
 
 
 def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
@@ -420,7 +438,7 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispM
         except:
             print(f"Can't fit plane of length {len(points)}.")
             pass
-        print("Plane equation: ", best_eq)
+        # print("Plane equation: ", best_eq)
         if best_eq == []:
             continue
         # the plane equation is of the form: Ax+By+Cz+D, e.g., [0.720, -0.253, 0.646, 1.100]
