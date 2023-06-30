@@ -27,7 +27,9 @@ DISPLAY = True
 # segmentMethod = "segmentMeanShift"
 # segmentMethod = "hybrid"
 # segmentMethod = "segmentOpenCVKMeans"
-segmentMethod = "segmentFelzenszwalb"
+# segmentMethod = "segmentFelzenszwalb"
+segmentMethod = "segmentQuickshift"
+
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
@@ -50,6 +52,15 @@ def segmentFelzenszwalb(img):
     cv2.waitKey(0)
     # exit(0)
     return segments_fz, img
+
+def segmentQuickshift(img):
+    segments_quick = quickshift(img, kernel_size=5, max_dist=10, ratio=0.5)
+    print(f'Quickshift number of segments: {len(np.unique(segments_quick))}')
+    print(segments_quick)
+    cv2.imshow("result", mark_boundaries(img, segments_quick))
+    cv2.waitKey(0)
+    # exit(0)
+    return segments_quick, img
 
 def segmentMeanShift(img):
     # reduce noise
@@ -149,6 +160,8 @@ def segment(img):
         return segmentSLIC(segmentedImg)
     if segmentMethod == "segmentFelzenszwalb":
         return segmentFelzenszwalb(img)
+    if segmentMethod == "segmentQuickshift":
+        return segmentQuickshift(img)
 
 
 def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
@@ -402,8 +415,12 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispM
             newPoint = [x, y, segmentPixelDisp]
             points.append(newPoint)
         plane = pyrsc.Plane()
-        best_eq, best_inliers = plane.fit(np.array(points), 0.01)
-        # print("Plane equation: ", best_eq)
+        try:
+            best_eq, best_inliers = plane.fit(np.array(points), 0.01)
+        except:
+            print(f"Can't fit plane of length {len(points)}.")
+            pass
+        print("Plane equation: ", best_eq)
         if best_eq == []:
             continue
         # the plane equation is of the form: Ax+By+Cz+D, e.g., [0.720, -0.253, 0.646, 1.100]
