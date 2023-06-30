@@ -550,7 +550,7 @@ def main():
         newLeftDispMap
     )
 
-    # outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+    outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
     # segments_fz = felzenszwalb(leftOriginalImage, scale=100, sigma=0.5, min_size=50)
 
     if DISPLAY:
