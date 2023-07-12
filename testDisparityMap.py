@@ -430,6 +430,8 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispM
             x = pixel[0]
             y = pixel[1]
             segmentPixelDisp = leftDispMap[x][y]
+            if segmentPixelDisp == 0:
+                continue
             newPoint = [x, y, segmentPixelDisp]
             points.append(newPoint)
         plane = pyrsc.Plane()
