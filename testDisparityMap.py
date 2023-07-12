@@ -372,7 +372,7 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
         return "NO_OCC"
 
 
-def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage):
+def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage):
     segmentDispDict = {}
     segmentCoordsDict = {}
     segmentOutliersDict = {}
@@ -419,10 +419,10 @@ def markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmente
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
 
-    return segmentCoordsDict, segmentOutliersDict
+    return segmentCoordsDict, segmentOutliersDict, globalOutliers
 
 
-def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispMap):
+def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispMap, newLeftDispMap):
     for segmentId in segmentCoordsDict:
         # construct the plane
         points = []
@@ -458,7 +458,7 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, leftDispMap, newLeftDispM
             x = pixel[0]
             y = pixel[1]
             segmentPixelDisp = leftDispMap[x][y]
-            if segmentPixelDisp in segmentOutliersDict[segmentId] or segmentPixelDisp == 0:
+            if (segmentPixelDisp in segmentOutliersDict[segmentId]) or (segmentPixelDisp in globalOutliers) or (segmentPixelDisp == 0):
                 newLeftDispMap[x][y] = z
 
 
@@ -476,8 +476,8 @@ def processPixels(
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
-    segmentCoordsDict, segmentOutliers = markSegmentOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
-    fixDispMap(segmentCoordsDict, segmentOutliers, leftDispMap, newLeftDispMap)
+    segmentCoordsDict, segmentOutliers, globalOutliers = markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
+    fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap)
 
     for r in range(0, rows):
         for c in range(0, cols):
