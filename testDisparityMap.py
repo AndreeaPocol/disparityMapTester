@@ -13,24 +13,23 @@ import seaborn as sns
 import pyransac3d as pyrsc
 from sklearn.cluster import KMeans, MeanShift, estimate_bandwidth
 from sklearn.metrics import pairwise_distances_argmin
-from sklearn.datasets import load_sample_image
 from sklearn.utils import shuffle
 from skimage.segmentation import mark_boundaries
 from skimage.filters import sobel
 from skimage.color import rgb2gray
-
+import re
 
 COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
 OUTLIER_THRESH = 3
 DISPLAY = True
 
 # segmentMethod = "segmentKMeans"
-# segmentMethod = "segmentSLIC"
+segmentMethod = "segmentSLIC"
 # segmentMethod = "segmentMeanShift"
 # segmentMethod = "hybrid"
 # segmentMethod = "segmentOpenCVKMeans"
 # segmentMethod = "segmentFelzenszwalb"
-segmentMethod = "segmentQuickshift"
+# segmentMethod = "segmentQuickshift"
 # segmentMethod = "segmentWatershed"
 
 
@@ -45,6 +44,11 @@ code_2_color = {
     "maybeWrongGlobalOutlier": "purple",
     "maybeRight": "blue",
 }
+
+
+def roundInt(x):
+    if x in [float("-inf"),float("inf")]: return 0
+    return int(round(x))
 
 
 def segmentWatershed(img):
@@ -69,7 +73,7 @@ def segmentFelzenszwalb(img):
 
 
 def segmentQuickshift(img):
-    segments_quick = quickshift(img, kernel_size=5, max_dist=10, ratio=0.7)
+    segments_quick = quickshift(img, kernel_size=5, max_dist=10, ratio=0.5)
     print(f'Quickshift number of segments: {len(np.unique(segments_quick))}')
     print(segments_quick)
     cv2.imshow("result", mark_boundaries(img, segments_quick))
@@ -253,7 +257,7 @@ def detectOutliersStatistically(data, leftDispMap):
 
     for r in range(0, rows):
         for c in range(0, cols):
-            curPixelDisp = leftDispMap[r][c]
+            curPixelDisp = roundInt(leftDispMap[r][c])
             if curPixelDisp < lower or curPixelDisp > upper:
                 outliers.append(curPixelDisp)
     return outliers, lower, upper
@@ -350,15 +354,15 @@ def pixelDoesNotFuseProperly(r, c, d, leftOriginalImage, rightOriginalImage):
 
 def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
     P = [r, c]
-    dispAtP = leftDispMap[P[0]][P[1]]
+    dispAtP = roundInt(leftDispMap[P[0]][P[1]])
     Q = [r, P[1] - dispAtP]
     if Q[1] < 0:
         return "OOB"
-    dispAtQ = rightDispMap[Q[0]][Q[1]]
+    dispAtQ = roundInt(rightDispMap[Q[0]][Q[1]])
     R = [r, Q[1] + dispAtQ]
     if R[1] >= leftDispMap.shape[1]:
         return "OOB"
-    dispAtR = leftDispMap[R[0]][R[1]]
+    dispAtR = roundInt(leftDispMap[R[0]][R[1]])
     T = [r, R[1] - dispAtR]
     if T[1] < 0:
         return "OOB"
@@ -377,6 +381,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
     segmentCoordsDict = {}
     segmentOutliersDict = {}
     globalDisps = list(np.concatenate(np.asarray(leftDispMap)).flat)
+    globalDisps = [roundInt(disp) for disp in globalDisps]
     data = list(filter(lambda x: x > 0, globalDisps))
     # globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
     # plotHistogram(globalDisps, lower, upper)
@@ -384,7 +389,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
 
     for r in range(0, rows):
         for c in range(0, cols):
-            curPixelDisp = leftDispMap[r][c]
+            curPixelDisp = roundInt(leftDispMap[r][c])
             if curPixelDisp in globalOutliers:
                 outputScore[r][c] = name_to_rgb(code_2_color["maybeWrongGlobalOutlier"])
             # Update segment disparities in segmentDispDict.
@@ -410,7 +415,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
-            segmentPixelDisp = leftDispMap[x][y]
+            segmentPixelDisp = roundInt(leftDispMap[x][y])
             if segmentPixelDisp in segmentOutliers:
                 outputScore[x][y] = name_to_rgb(
                     code_2_color["maybeWrongSegmentOutlier"]
@@ -429,7 +434,7 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
-            segmentPixelDisp = leftDispMap[x][y]
+            segmentPixelDisp = roundInt(leftDispMap[x][y])
             if segmentPixelDisp == 0:
                 continue
             newPoint = [x, y, segmentPixelDisp]
@@ -457,7 +462,7 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
-            segmentPixelDisp = leftDispMap[x][y]
+            segmentPixelDisp = roundInt(leftDispMap[x][y])
             if (segmentPixelDisp in segmentOutliersDict[segmentId]) or (segmentPixelDisp in globalOutliers) or (segmentPixelDisp == 0):
                 newLeftDispMap[x][y] = z
 
@@ -472,16 +477,15 @@ def processPixels(
     rightOriginalImage,
     newLeftDispMap
 ):
-
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
     segmentCoordsDict, segmentOutliers, globalOutliers = markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
-    fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap)
+    # fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap)
 
     for r in range(0, rows):
         for c in range(0, cols):
-            curPixelDisp = leftDispMap[r][c]
+            curPixelDisp = roundInt(leftDispMap[r][c])
             if pixelIsUnknown(curPixelDisp):
                 outputScore[r][c] = name_to_rgb(code_2_color["definitelyWrongUnknown"])
                 continue
@@ -509,20 +513,39 @@ def processPixels(
                 )
 
 
+def convertRgbToGrayscale(color_image, side):
+    # This solution is based on 
+    # https://stackoverflow.com/questions/51824718/opencv-jetmap-or-colormap-to-grayscale-reverse-applycolormap
+    # create an inverse from the colormap to gray values
+    gray_values = np.arange(256, dtype=np.uint8)
+    color_values = map(tuple, cv2.applyColorMap(gray_values, cv2.COLORMAP_JET).reshape(256, 3))
+    color_to_gray_map = dict(zip(color_values, gray_values))
+
+    # apply the inverse map to the false color image to reconstruct the grayscale image
+    gray_image = np.apply_along_axis(lambda bgr: color_to_gray_map[tuple(bgr)], 2, color_image)
+
+    # save reconstructed grayscale image
+    cv2.imwrite(f'grayscale_disp_map_{side}.png', gray_image)
+    return gray_image
+
+
 def main():
+    dispType = ""
     leftDispMapFile = ""
     rightDispMapFile = ""
     leftOriginalImageFile = ""
     rightOriginalImageFile = ""
-    if len(sys.argv) == 6:
-        leftDispMapFile = sys.argv[1]
-        rightDispMapFile = sys.argv[2]
-        leftOriginalImageFile = sys.argv[3]
-        rightOriginalImageFile = sys.argv[4]
-        dispMapScoreOutputFile = sys.argv[5]
+    if len(sys.argv) == 7:
+        dispType = sys.argv[1]
+        leftDispMapFile = sys.argv[2]
+        rightDispMapFile = sys.argv[3]
+        leftOriginalImageFile = sys.argv[4]
+        rightOriginalImageFile = sys.argv[5]
+        dispMapScoreOutputFile = sys.argv[6]
     else:
         print(
-            "Usage: {name} [ leftDispMapFile \
+            "Usage: {name} [ dispType \
+            leftDispMapFile \
             rightDispMapFile \
             leftOriginalImageFile \
             rightOriginalImageFile \
@@ -532,12 +555,32 @@ def main():
         )
         exit()
 
-    leftDispMap = cv2.imread(leftDispMapFile, 0)  # grayscale mode
-    rightDispMap = cv2.imread(rightDispMapFile, 0)  # grayscale mode
-    outputScore = cv2.imread(leftDispMapFile, 1)  # colour mode
+    if dispType == "PGM" or dispType == "PFM":
+        leftDispMap = cv2.imread(leftDispMapFile, -1)
+        rightDispMap = cv2.imread(rightDispMapFile, -1)
+        with open(leftDispMapFile, 'rb') as pfm_file:
+            header = pfm_file.readline().decode().rstrip()
+            dim_match = re.match(r'^(\d+)\s(\d+)\s$', pfm_file.readline().decode('utf-8'))
+            if not dim_match:
+                raise Exception("Malformed PFM header.")
+            scale = float(pfm_file.readline().decode().rstrip()) # read disparity scale factor
+            if scale < 0: # little-endian
+                scale = -scale
+        leftDispMap = leftDispMap * scale
+        rightDispMap = rightDispMap * scale
+        print(f"scale: {scale}")
+    elif dispType == "RGB":
+        leftDispMap = cv2.imread(leftDispMapFile)
+        rightDispMap = cv2.imread(rightDispMapFile)
+        leftDispMap = convertRgbToGrayscale(leftDispMap, "left")
+        rightDispMap = convertRgbToGrayscale(rightDispMap, "right")
+    else:
+        leftDispMap = cv2.imread(leftDispMapFile, 0)  # grayscale mode
+        rightDispMap = cv2.imread(rightDispMapFile, 0)
+    outputScore = cv2.imread(leftOriginalImageFile, 1)  # colour mode
     leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)
     rightOriginalImage = cv2.imread(rightOriginalImageFile, 1)
-    newLeftDispMap = leftDispMap.copy()
+    newLeftDispMap = leftOriginalImage.copy()
     segments, segmentedImage = segment(leftOriginalImage)
 
     # showColourDist(originalImage)
@@ -553,16 +596,13 @@ def main():
     )
 
     outputScore = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
-    # segments_fz = felzenszwalb(leftOriginalImage, scale=100, sigma=0.5, min_size=50)
 
     if DISPLAY:
         cv2.imshow("Original (left) disparity map", leftDispMap)
         cv2.imshow("Marked (left) disparity map", outputScore)
         cv2.imshow("Original (left) image", leftOriginalImage)
         cv2.imshow("Segmented (left) image", segmentedImage)
-        cv2.imshow("Corrected (left) disparity map", newLeftDispMap)
-        # cv2.imshow("leftDispMap with boundaries", mark_boundaries(leftDispMap, segments_fz))
-        # cv2.imshow("outputScore with boundaries", mark_boundaries(outputScore, segments_fz))        
+        cv2.imshow("Corrected (left) disparity map", newLeftDispMap)       
         displayLegend()
         cv2.waitKey(0)  # waits until a key is pressed
         cv2.destroyAllWindows()

@@ -9,14 +9,20 @@ See `inputs` for an assorted test bed of 3D images.
 
 ### *To run:*
 
+Note: If your disparity maps are RGB image files (e.g., PNG, JPEG), set `dispType` to "RGB". If your disparity maps are PGM or PFM files, set `dispType` to "PGM" or "PFM". If your disparity maps are grayscale images, set `dispType` to "GRAY".
 ```
-python3 testDisparityMap.py <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFile>
+python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFile>
 ```
 
 ### *Examples:*
 ```
-python3 testDisparityMap.py inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/left_disparity_art_bad_score.png
+python3 testDisparityMap.py GRAY inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/left_disparity_art_bad_score.png
 ```
+
+```
+python3 testDisparityMap.py PFM inputs/artroom1/input/left_disparity_artroom1.pfm inputs/artroom1/input/right_disparity_artroom1.pfm inputs/artroom1/left_artroom1.png inputs/artroom1/right_artroom1.png inputs/artroom1/output/left_disparity_artroom1_score.png
+```
+
 Original image             |  Disparity map            |  Score                    | Legend
 :-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
 ![image](inputs/art/art_L.png)  |  ![image](inputs/art/input/left_disparity_art_bad.png)  |  ![image](results/final_score.png) | ![image](legend.png)
