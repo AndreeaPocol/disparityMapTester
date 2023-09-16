@@ -11,16 +11,16 @@ See `inputs` for an assorted test bed of 3D images.
 
 Note: If your disparity maps are RGB image files (e.g., PNG, JPEG), set `dispType` to "RGB". If your disparity maps are PGM or PFM files, set `dispType` to "PGM" or "PFM". If your disparity maps are grayscale images, set `dispType` to "GRAY".
 ```
-python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFile>
+python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFile> <optional|segmentFile>
 ```
 
 ### *Examples:*
 ```
-python3 testDisparityMap.py GRAY inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/left_disparity_art_bad_score.png
+python3 testDisparityMap.py GRAY inputs/art/input/left_disparity_art_bad.png inputs/art/input/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/left_disparity_art_bad_score.png inputs/art/segments.txt
 ```
 
 ```
-python3 testDisparityMap.py PFM inputs/artroom1/input/left_disparity_artroom1.pfm inputs/artroom1/input/right_disparity_artroom1.pfm inputs/artroom1/left_artroom1.png inputs/artroom1/right_artroom1.png inputs/artroom1/output/left_disparity_artroom1_score.png
+python3 testDisparityMap.py PFM inputs/artroom1/input/left_disparity_artroom1.pfm inputs/artroom1/input/right_disparity_artroom1.pfm inputs/artroom1/left_artroom1.png inputs/artroom1/right_artroom1.png inputs/artroom1/output/left_disparity_artroom1_score.png inputs/art/segments.txt
 ```
 
 Original image             |  Disparity map            |  Score                    | Legend
@@ -37,7 +37,7 @@ Given a disparity map, `testDisparityMap` will:
 1. Extract all of the pixels from the image and disparity map that belong to a given segment. Consider all the disparities associated with that segment, keeping in mind that disparities should be continuous. Identify all the discrete, consecutive/contiguous disparity groups within the segment. If any group stands out from the rest, mark those disparities as potential outliers.
 1. Repeat the previous step on the entire disparity map to identify potential global outliers.
 1. Assign each pixel a color-coded score. Output an image based on the disparity map where the color of each pixel reflects the likelihood that the pixel is wrong.
-<!-- 1. [optional] perform correction, using RANSAC plane fitting. -->
+1. Perform correction, using RANSAC plane fitting.
 
 
 

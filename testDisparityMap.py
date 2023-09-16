@@ -24,7 +24,8 @@ OUTLIER_THRESH = 3
 DISPLAY = True
 
 # segmentMethod = "segmentKMeans"
-segmentMethod = "segmentSLIC"
+# segmentMethod = "segmentSLIC"
+segmentMethod = "segmentFile"
 # segmentMethod = "segmentMeanShift"
 # segmentMethod = "hybrid"
 # segmentMethod = "segmentOpenCVKMeans"
@@ -166,7 +167,18 @@ def segmentSLIC(img):
     return segments, label2rgb(segments, img, kind="avg")
 
 
+def segmentsFromFile(imgSegFile):
+    segments = []
+    with open(imgSegFile, 'r') as f:
+        for line in f.read().splitlines():
+            segments.append(line.split(',')[:-1]) # omit trailing blank element
+    # print(np.array(segments))
+    return np.array(segments)
+
+
 def segment(img):
+    if segmentMethod == "segmentFile":
+        return segmentsFromFile(img)
     if segmentMethod == "segmentSLIC":
         return segmentSLIC(img)
     if segmentMethod == "segmentKMeans":
@@ -481,7 +493,7 @@ def processPixels(
     cols = leftDispMap.shape[1]
 
     segmentCoordsDict, segmentOutliers, globalOutliers = markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
-    # fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap)
+    fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap)
 
     for r in range(0, rows):
         for c in range(0, cols):
@@ -535,7 +547,16 @@ def main():
     rightDispMapFile = ""
     leftOriginalImageFile = ""
     rightOriginalImageFile = ""
-    if len(sys.argv) == 7:
+    segmentFile = ""
+    if len(sys.argv) == 8:
+        dispType = sys.argv[1]
+        leftDispMapFile = sys.argv[2]
+        rightDispMapFile = sys.argv[3]
+        leftOriginalImageFile = sys.argv[4]
+        rightOriginalImageFile = sys.argv[5]
+        dispMapScoreOutputFile = sys.argv[6]
+        segmentFile = sys.argv[7]
+    elif len(sys.argv) == 7:
         dispType = sys.argv[1]
         leftDispMapFile = sys.argv[2]
         rightDispMapFile = sys.argv[3]
@@ -549,7 +570,8 @@ def main():
             rightDispMapFile \
             leftOriginalImageFile \
             rightOriginalImageFile \
-            dispMapScoreOutputFile ]".format(
+            dispMapScoreOutputFile \
+            [optional] segmentFile]".format(
                 name=sys.argv[0]
             )
         )
@@ -580,8 +602,12 @@ def main():
     outputScore = cv2.imread(leftOriginalImageFile, 1)  # colour mode
     leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)
     rightOriginalImage = cv2.imread(rightOriginalImageFile, 1)
-    newLeftDispMap = leftOriginalImage.copy()
-    segments, segmentedImage = segment(leftOriginalImage)
+    newLeftDispMap = leftDispMap.copy()
+    if segmentMethod == "segmentFile":
+        segments = segment(segmentFile)
+        segmentedImage = leftOriginalImage
+    else:
+        segments, segmentedImage = segment(leftOriginalImage)
 
     # showColourDist(originalImage)
     processPixels(
@@ -603,7 +629,7 @@ def main():
         cv2.imshow("Original (left) image", leftOriginalImage)
         cv2.imshow("Segmented (left) image", segmentedImage)
         cv2.imshow("Corrected (left) disparity map", newLeftDispMap)       
-        displayLegend()
+        # displayLegend()
         cv2.waitKey(0)  # waits until a key is pressed
         cv2.destroyAllWindows()
 
