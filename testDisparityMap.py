@@ -467,13 +467,13 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
         D = best_eq[3]
         if C == 0:
             continue
-        # (A * x) + (B * y) + (C * z) + D = 0
-        z = (-D - (A * x) - (B * y))/C
 
         # use the plane to correct outliers
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
+            # (A * x) + (B * y) + (C * z) + D = 0
+            z = (-D - (A * x) - (B * y))/C
             segmentPixelDisp = roundInt(leftDispMap[x][y])
             if (segmentPixelDisp in segmentOutliersDict[segmentId]) or (segmentPixelDisp in globalOutliers) or (segmentPixelDisp == 0):
                 newLeftDispMap[x][y] = z
