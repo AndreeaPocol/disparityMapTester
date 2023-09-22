@@ -1,7 +1,4 @@
 /.vscode
-/README-CC.md
-/Screen Shot 2022-11-04 at 3.06.46 PM.png
-/global_disp_dist.png
 /main.cc
 /stats.cc
 /stats.h
@@ -9,3 +6,5 @@
 /paper images
 teddy.zip
 .DS_Store
+inputs/*
+.gitignore
