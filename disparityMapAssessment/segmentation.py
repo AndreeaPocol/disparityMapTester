@@ -8,7 +8,8 @@ from sklearn.utils import shuffle
 from skimage.segmentation import mark_boundaries
 from skimage.filters import sobel
 from skimage.color import rgb2gray
-from config import *
+from disparityMapAssessment.config import *
+
 
 def segmentWatershed(img):
     gradient = sobel(rgb2gray(img))
@@ -17,7 +18,6 @@ def segmentWatershed(img):
     print(segments_watershed)
     cv2.imshow("result", mark_boundaries(img, segments_watershed))
     cv2.waitKey(0)
-    # exit(0)
     return segments_watershed, img
 
 
@@ -27,7 +27,6 @@ def segmentFelzenszwalb(img):
     print(segments_fz)
     cv2.imshow("result", mark_boundaries(img, segments_fz))
     cv2.waitKey(0)
-    # exit(0)
     return segments_fz, img
 
 
@@ -37,7 +36,6 @@ def segmentQuickshift(img):
     print(segments_quick)
     cv2.imshow("result", mark_boundaries(img, segments_quick))
     cv2.waitKey(0)
-    # exit(0)
     return segments_quick, img
 
 

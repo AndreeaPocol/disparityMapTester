@@ -214,6 +214,7 @@ def main():
     outputScore = cv2.imread(leftOriginalImageFile, 1)  # colour mode
     leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)
     rightOriginalImage = cv2.imread(rightOriginalImageFile, 1)
+    
     newLeftDispMap = leftDispMap.copy()
     if segmentMethod == "segmentFile":
         segments = segment(segmentFile)
