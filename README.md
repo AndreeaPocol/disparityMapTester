@@ -9,7 +9,9 @@ See `inputs` for an assorted test bed of 3D images.
 
 ### *To run:*
 
-Note: If your disparity maps are RGB image files (e.g., PNG, JPEG), set `dispType` to "RGB". If your disparity maps are PGM or PFM files, set `dispType` to "PGM" or "PFM". If your disparity maps are grayscale images, set `dispType` to "GRAY".
+Set your preferred segmentation method in `config.py`. 
+
+If your disparity maps are RGB image files (e.g., PNG, JPEG), set the `dispType` parameter to "RGB". If your disparity maps are PGM or PFM files, set `dispType` to "PGM" or "PFM". If your disparity maps are grayscale images, set `dispType` to "GRAY".
 ```
 python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFile> <optional|segmentFile>
 ```
