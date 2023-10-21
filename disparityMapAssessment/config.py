@@ -6,11 +6,11 @@ DISPLAY = True
 
 # segmentMethod = "segmentKMeans"
 # segmentMethod = "segmentSLIC"
-segmentMethod = "segmentFile"
+# segmentMethod = "segmentFile"
 # segmentMethod = "segmentMeanShift"
 # segmentMethod = "hybrid"
 # segmentMethod = "segmentOpenCVKMeans"
-# segmentMethod = "segmentFelzenszwalb"
+segmentMethod = "segmentFelzenszwalb"
 # segmentMethod = "segmentQuickshift"
 # segmentMethod = "segmentWatershed"
 
