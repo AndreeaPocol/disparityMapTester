@@ -59,7 +59,7 @@ python3 computeDisparityMapScore.py inputs/art/output/left_disparity_art_bad_sco
 ### *Overview:*
 Produces a numerical score.
 
-# Generating Disparity Maps With OpenCV
+# Generating Disparity Maps
 
 ## *Executable:* `generateDisparityMaps.py`
 
@@ -72,3 +72,18 @@ python3 generateDisparityMaps.py inputs/aloe/aloe_L.png inputs/aloe/aloe_R.png i
 
 Generates a disparity map using OpenCV's StereoBM and StereoSGBM methods.
 
+## *Executable:* `cre.ipynb`
+
+### *Overview:*
+
+Generates a disparity map using [CREStereo](https://openaccess.thecvf.com/content/CVPR2022/papers/Li_Practical_Stereo_Matching_via_Cascaded_Recurrent_Network_With_Adaptive_Correlation_CVPR_2022_paper.pdf). Requires CUDA. Can be run in Google Colab. Go to Edit -> Notebook Settings -> Hardware accelerator and select a GPU.
+
+## *Executable:* `dlnr.ipynb`
+
+### *Overview:*
+
+Generates a disparity map using [DLNR](https://openaccess.thecvf.com/content/CVPR2023/papers/Zhao_High-Frequency_Stereo_Matching_Network_CVPR_2023_paper.pdf). Requires CUDA. Can be run in Google Colab. Go to Edit -> Notebook Settings -> Hardware accelerator and select a GPU. 
+
+Contact the authors for the following required files:
+* `DLNR_Middlebury.pth` (the pre-trained weights)
+* `inference.py`
