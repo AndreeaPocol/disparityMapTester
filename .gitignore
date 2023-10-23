@@ -1,10 +1,11 @@
 /.vscode
-/main.cc
-/stats.cc
-/stats.h
-/testDisparityMap
-/paper images
-teddy.zip
 .DS_Store
 inputs/*
 .gitignore
+disparityMapAssessment/__pycache__/*
+disparityMapGeneration/DLNR/DLNR_Middlebury.pth
+disparityMapGeneration/DLNR/inference.py
+disparityMapGeneration/DLNR/roses_L.png
+disparityMapGeneration/DLNR/roses_R.png
+inputs/art/BM/left_disparity_art.png
+test.py
