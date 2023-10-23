@@ -27,7 +27,7 @@ python3 testDisparityMap.py PFM inputs/artroom1/input/left_disparity_artroom1.pf
 
 Original image             |  Disparity map            |  Score                    | Legend
 :-------------------------:|:-------------------------:|:-------------------------:|:-------------------------:
-![image](inputs/art/art_L.png)  |  ![image](inputs/art/input/left_disparity_art_bad.png)  |  ![image](results/final_score.png) | ![image](legend.png)
+![image](inputs/art/art_L.png)  |  ![image](inputs/art/input/left_disparity_art_bad.png)  |  ![image](disparityMapAssessment/results/final_score.png) | ![image](disparityMapAssessment/legend.png)
 
 
 ### *Overview:*
