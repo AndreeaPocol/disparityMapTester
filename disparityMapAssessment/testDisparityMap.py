@@ -48,7 +48,7 @@ def pixelDoesNotFuseProperly(r, c, d, leftOriginalImage, rightOriginalImage):
     distB = m(c1[2]) - m(c2[2])
 
     eDist = math.sqrt(pow(distR, 2) + pow(distG, 2) + pow(distB, 2))
-    return eDist > COLOR_DIFF_TRESH
+    return eDist > COLOR_DIFF_THRESH
 
 
 def pixelIsOccluded(r, c, leftDispMap, rightDispMap):

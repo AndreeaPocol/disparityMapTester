@@ -1,7 +1,7 @@
 import math
 
 OUTLIER_THRESH = 3
-COLOR_DIFF_TRESH = math.sqrt(3) / 2  # TODO make a slider
+COLOR_DIFF_THRESH = math.sqrt(3) / 2  # TODO make a slider
 DISPLAY = True
 
 # segmentMethod = "segmentKMeans"
