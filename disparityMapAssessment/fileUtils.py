@@ -32,3 +32,13 @@ def convertRgbToGrayscale(color_image, side):
     # save reconstructed grayscale image
     cv2.imwrite(f'grayscale_disp_map_{side}.png', gray_image)
     return gray_image
+
+
+def visualizePfmImage(imgFile):
+    img = cv2.imread(imgFile, -1)
+    scale = getScaleFromPMFile(imgFile)
+    img = img * scale
+
+    cv2.imshow("Original (left) disparity map", img)
+    cv2.waitKey(0)  # waits until a key is pressed
+    cv2.destroyAllWindows()
