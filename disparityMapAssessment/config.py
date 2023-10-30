@@ -3,6 +3,7 @@ import math
 OUTLIER_THRESH = 3
 COLOR_DIFF_THRESH = math.sqrt(3) / 2  # TODO make a slider
 DISPLAY = True
+WINDOW_SIZE = 140
 
 # segmentMethod = "segmentKMeans"
 # segmentMethod = "segmentSLIC"
@@ -10,9 +11,10 @@ DISPLAY = True
 # segmentMethod = "segmentMeanShift"
 # segmentMethod = "hybrid"
 # segmentMethod = "segmentOpenCVKMeans"
-segmentMethod = "segmentFelzenszwalb"
+# segmentMethod = "segmentFelzenszwalb"
 # segmentMethod = "segmentQuickshift"
 # segmentMethod = "segmentWatershed"
+segmentMethod = "fineSegmentation"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",
