@@ -47,11 +47,12 @@ def fineSegmentWatershed(img, tileId):
     res = avg[labeled]
     result = res.reshape((img.shape))
     
+    newSegments = segments_watershed.astype(str)
     for row in range(segments_watershed.shape[0]):
         for col in range(segments_watershed.shape[1]):
             oldLabel = segments_watershed[row, col]
-            segments_watershed[row, col] = int(str(oldLabel) + str(tileId))
-    return segments_watershed, result
+            newSegments[row, col] = str(oldLabel) + tileId
+    return newSegments, result
 
 
 def segmentFelzenszwalb(img):
@@ -66,14 +67,14 @@ def segmentFelzenszwalb(img):
 def fineSegmentFelzenszwalb(img, tileId):
     segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
     print(f'Felzenszwalb number of segments: {len(np.unique(segments_fz))}, tile ID: {tileId}')
+    newSegments = segments_fz.astype(str)
     for row in range(segments_fz.shape[0]):
         for col in range(segments_fz.shape[1]):
             oldLabel = segments_fz[row, col]
-            segments_fz[row, col] = int(str(oldLabel) + str(tileId))
-    # print(f"segments_fz UNIQUE: {segments_fz}")
+            newSegments[row, col] = str(oldLabel) + tileId
     # cv2.imshow("result with boundaries", mark_boundaries(img, segments_fz))
     # cv2.waitKey(0)
-    return segments_fz, img
+    return newSegments, img
 
 
 def segmentQuickshift(img):
@@ -171,13 +172,14 @@ def segmentSLIC(img):
 
 def fineSegmentSLIC(img, tileId):
     # applying Simple Linear Iterative Clustering on the image
-    segments = slic(img, n_segments=450, compactness=10)
+    segments = slic(img, n_segments=900, compactness=10, max_num_iter=20)
+    newSegments = segments.astype(str)
     # converts a label image into an RGB color image for visualizing the labeled regions.
     for row in range(segments.shape[0]):
         for col in range(segments.shape[1]):
             oldLabel = segments[row, col]
-            segments[row, col] = int(str(oldLabel) + str(tileId))
-    return segments, label2rgb(segments, img, kind="avg")
+            newSegments[row, col] = str(oldLabel) + tileId
+    return newSegments, label2rgb(segments, img, kind="avg")
 
 
 def segmentsFromFile(imgSegFile):
@@ -187,26 +189,6 @@ def segmentsFromFile(imgSegFile):
             segments.append(line.split(',')[:-1]) # omit trailing blank element
     # print(np.array(segments))
     return np.array(segments)
-
-
-def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
-    rows = segmentedImage.shape[0]
-    cols = segmentedImage.shape[1]
-    # for every segment...
-    numSegments = len(segmentCoordsDict)
-    print("Number of segments: {}".format(numSegments))
-    for segmentId, segmentCoords in segmentCoordsDict.items():
-        curSegment = np.copy(segmentedImage)
-        # find only pixels pertaining to a single segment
-        # (the rest should be black)
-        for r in range(0, rows):
-            for c in range(0, cols):
-                if [r, c] not in segmentCoords:
-                    curSegment[r][c] = (0, 0, 0)
-        if len(segmentDispDict[segmentId]) > 4:
-            cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
-            # plotHistogram(segmentDispDict[segmentId])
-            cv2.waitKey(0)
 
 
 def increaseContrast(img):
@@ -235,10 +217,10 @@ def fineSegmentation(img, window=WINDOW_SIZE):
     rows = img.shape[0]
     cols = img.shape[1]
     segments = []
-    labeledImg = np.array([[0]*cols for _ in range(rows)])
-    tiles = np.array([[0]*cols for _ in range(rows)])
+    labeledImg = np.array([["000000000"]*cols for _ in range(rows)])
+    tiles = np.array([["000000000"]*cols for _ in range(rows)])
     segmentedImg = img.copy()
-    tileId = 0
+    tileId = 'a'
 
     for x in range(0,rows,window):
         for y in range(0,cols,window): # TODO: leftover chunks unsegmented...find multiple?
@@ -251,10 +233,11 @@ def fineSegmentation(img, window=WINDOW_SIZE):
             # cv2.waitKey(0)
             labeledImg[x:x+window, y:y+window] = labels
             segmentedImg[x:x+window, y:y+window] = segments
-            tileId += 1
+            tileId = chr(ord(tileId) + 1)
+            assert(tileId <= 'z')
     cv2.imshow("Segmented image", segmentedImg)
     print(f"Labels {labeledImg}")
-    cv2.imshow("result", mark_boundaries(segmentedImg, tiles))
+    # cv2.imshow("result", mark_boundaries(segmentedImg, tiles))
     cv2.waitKey(0)  # waits until a key is pressed
     return labeledImg, segmentedImg
 
