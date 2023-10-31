@@ -21,12 +21,58 @@ def segmentWatershed(img):
     return segments_watershed, img
 
 
+def fineSegmentWatershed(img, tileId):
+    gradient = sobel(rgb2gray(img))
+    segments_watershed = watershed(gradient, markers=250, compactness=0.001)
+    print(f'Watershed number of segments: {len(np.unique(segments_watershed))}')
+    
+    # print(segments_watershed)
+    # cv2.imshow("result", mark_boundaries(img, segments_watershed))
+    # cv2.waitKey(0)
+
+    flat_image = img.reshape((-1,3))
+    flat_image = np.float32(flat_image)
+    labeled = segments_watershed.flatten()
+
+    # get the average color of each segment
+    total = np.zeros((labeled.shape[0], 3), dtype=float)
+    count = np.zeros(total.shape, dtype=float)
+    for i, label in enumerate(labeled):
+        total[label] = total[label] + flat_image[i]
+        count[label] += 1
+    avg = total/count
+    avg = np.uint8(avg)
+
+    # cast the labeled image into the corresponding average color
+    res = avg[labeled]
+    result = res.reshape((img.shape))
+    
+    for row in range(segments_watershed.shape[0]):
+        for col in range(segments_watershed.shape[1]):
+            oldLabel = segments_watershed[row, col]
+            segments_watershed[row, col] = int(str(oldLabel) + str(tileId))
+    return segments_watershed, result
+
+
 def segmentFelzenszwalb(img):
     segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
     print(f'Felzenszwalb number of segments: {len(np.unique(segments_fz))}')
     print(segments_fz)
     cv2.imshow("result", mark_boundaries(img, segments_fz))
     cv2.waitKey(0)
+    return segments_fz, img
+
+
+def fineSegmentFelzenszwalb(img, tileId):
+    segments_fz = felzenszwalb(img, scale=100, sigma=0.5, min_size=50)
+    print(f'Felzenszwalb number of segments: {len(np.unique(segments_fz))}, tile ID: {tileId}')
+    for row in range(segments_fz.shape[0]):
+        for col in range(segments_fz.shape[1]):
+            oldLabel = segments_fz[row, col]
+            segments_fz[row, col] = int(str(oldLabel) + str(tileId))
+    # print(f"segments_fz UNIQUE: {segments_fz}")
+    # cv2.imshow("result with boundaries", mark_boundaries(img, segments_fz))
+    # cv2.waitKey(0)
     return segments_fz, img
 
 
@@ -71,41 +117,6 @@ def segmentMeanShift(img):
     result = res.reshape((img.shape))
     labeled = labeled.reshape((img.shape[0], img.shape[1]))
     return labeled, result
-
-
-def fineSegmentMeanShift(img, tileId):
-    # reduce noise
-    img = cv2.medianBlur(img, 3)
-
-    # flatten the image
-    flat_image = img.reshape((-1,3))
-    flat_image = np.float32(flat_image)
-
-    # meanshift
-    bandwidth = estimate_bandwidth(flat_image, quantile=.02, n_samples=3000)
-    ms = MeanShift(bandwidth=bandwidth, max_iter=800, bin_seeding=True)
-    ms.fit(flat_image)
-    labeled = ms.labels_
-    
-    # get number of segments
-    segments = np.unique(labeled)
-    print(f"# of segments: {np.size(segments)}, # of labels: {np.size(labeled)}")
-
-    # get the average color of each segment
-    total = np.zeros((segments.shape[0] + 1, 3), dtype=float) # TODO: why is the +1 necessary??
-    count = np.zeros(total.shape, dtype=float)
-    for i, label in enumerate(labeled):
-        total[label] = total[label] + flat_image[i]
-        count[label] += 1
-    avg = total/count
-    avg = np.uint8(avg)
-
-    # cast the labeled image into the corresponding average color
-    res = avg[labeled]
-    result = res.reshape((img.shape))
-    labeledUnique = np.array(list(map(lambda x : int(str(x) + str(tileId)), labeled)))
-    labeledUnique = labeledUnique.reshape((img.shape[0], img.shape[1]))
-    return labeledUnique, result
 
 
 def segmentKMeansColorQuant(img):
@@ -155,6 +166,17 @@ def segmentSLIC(img):
     # applying Simple Linear Iterative Clustering on the image
     segments = slic(img, n_segments=900, compactness=10)
     # converts a label image into an RGB color image for visualizing the labeled regions.
+    return segments, label2rgb(segments, img, kind="avg")
+
+
+def fineSegmentSLIC(img, tileId):
+    # applying Simple Linear Iterative Clustering on the image
+    segments = slic(img, n_segments=450, compactness=10)
+    # converts a label image into an RGB color image for visualizing the labeled regions.
+    for row in range(segments.shape[0]):
+        for col in range(segments.shape[1]):
+            oldLabel = segments[row, col]
+            segments[row, col] = int(str(oldLabel) + str(tileId))
     return segments, label2rgb(segments, img, kind="avg")
 
 
@@ -214,15 +236,17 @@ def fineSegmentation(img, window=WINDOW_SIZE):
     cols = img.shape[1]
     segments = []
     labeledImg = np.array([[0]*cols for _ in range(rows)])
+    tiles = np.array([[0]*cols for _ in range(rows)])
     segmentedImg = img.copy()
     tileId = 0
 
     for x in range(0,rows,window):
-        for y in range(0,cols,window):
+        for y in range(0,cols,window): # TODO: leftover chunks unsegmented...find multiple?
             tile = img[x:x+window, y:y+window]
+            tiles[x:x+window, y:y+window] = tileId
             if np.size(tile) == 0:
                 continue
-            labels, segments = fineSegmentMeanShift(tile, tileId)
+            labels, segments = fineSegmentSLIC(tile, tileId)
             # cv2.imshow("Segment", segments)
             # cv2.waitKey(0)
             labeledImg[x:x+window, y:y+window] = labels
@@ -230,6 +254,7 @@ def fineSegmentation(img, window=WINDOW_SIZE):
             tileId += 1
     cv2.imshow("Segmented image", segmentedImg)
     print(f"Labels {labeledImg}")
+    cv2.imshow("result", mark_boundaries(segmentedImg, tiles))
     cv2.waitKey(0)  # waits until a key is pressed
     return labeledImg, segmentedImg
 
