@@ -75,8 +75,10 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
         return "NO_OCC"
 
 
-def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispMap, newLeftDispMap):
+def correctPixels(fix, segmentCoordsDict, leftDispMap, newLeftDispMap, outliers):
     for segmentId in segmentCoordsDict:
+        if fix == "local" and not outliers[segmentId]:
+            continue # no segment outliers to fix
         # construct the plane
         points = []
         for pixel in segmentCoordsDict[segmentId]:
@@ -89,10 +91,12 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
             points.append(newPoint)
         plane = pyrsc.Plane()
         try:
-            best_eq, best_inliers = plane.fit(np.array(points), 0.01)
+            best_eq, _ = plane.fit(np.array(points), 0.01)
         except:
             print(f"Can't fit plane of length {len(points)}.")
             pass
+        if fix == "local":
+            print(f"fitting plane with {len(points)} points")
         # print("Plane equation: ", best_eq)
         if best_eq == []:
             continue
@@ -109,11 +113,34 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
             x = pixel[0]
             y = pixel[1]
             # (A * x) + (B * y) + (C * z) + D = 0
-            z = (-D - (A * x) - (B * y))/C
+            z = (-D - (A * x) - (B * y))/C # TODO: z < 0 because of the disparity jumps caused by bad segmentation
+            # if z < 0:
+            #     print(f"correct disparity is negative for segment {segmentId}: ", points)
             segmentPixelDisp = roundInt(leftDispMap[x][y])
-            if (segmentPixelDisp in globalOutliers) or (segmentPixelDisp == 0):
+            if (fix == "global") and ((segmentPixelDisp in outliers) or (segmentPixelDisp == 0)):
+                newLeftDispMap[x][y] = roundInt(z)
+            elif (fix == "local") and (segmentPixelDisp in outliers[segmentId]):
                 newLeftDispMap[x][y] = roundInt(z)
 
+
+def fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap, leftOriginalImage):
+    rows = leftDispMap.shape[0]
+    cols = leftDispMap.shape[1]
+    globalSegmentCoordsDict = {}
+    leftOriginalImage = increaseContrast(leftOriginalImage)
+    segments = slic(leftOriginalImage, n_segments=7000, compactness=10)
+    cv2.imshow("Broadly segmented image", label2rgb(segments, leftOriginalImage, kind="avg"))       
+    cv2.waitKey(0)
+
+    for r in range(0, rows):
+        for c in range(0, cols):
+            segmentCoords = [[r, c]]
+            segmentId = segments[r][c]
+            if segmentId in globalSegmentCoordsDict:
+                segmentCoords = segmentCoords + globalSegmentCoordsDict[segmentId]
+            globalSegmentCoordsDict[segmentId] = segmentCoords
+    correctPixels("global", globalSegmentCoordsDict, leftDispMap, newLeftDispMap, globalOutliers) # pass 1: correct unknown pixels
+    correctPixels("local", segmentCoordsDict, leftDispMap, newLeftDispMap, segmentOutliers) # pass 2: correct segment outliers
 
 def processPixels(
     leftDispMap,
@@ -129,7 +156,7 @@ def processPixels(
     cols = leftDispMap.shape[1]
 
     segmentCoordsDict, segmentOutliers, globalOutliers = markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
-    fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap)
+    fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap, leftOriginalImage)
 
     for r in range(0, rows):
         for c in range(0, cols):
