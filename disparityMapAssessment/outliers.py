@@ -1,6 +1,7 @@
 import numpy as np
 from webcolors import name_to_rgb
 from config import *
+import cv2
 
 
 def roundInt(x):
@@ -82,6 +83,70 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
     return outliers
 
 
+def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
+    rows = segmentedImage.shape[0]
+    cols = segmentedImage.shape[1]
+    
+    numSegments = len(segmentCoordsDict)
+    print("Number of segments: {}".format(numSegments))
+
+    # for every segment...
+    for segmentId, segmentCoords in segmentCoordsDict.items():
+        curSegment = np.copy(segmentedImage)
+        # find only pixels pertaining to a single segment
+        # (the rest should be black)
+        for r in range(0, rows):
+            for c in range(0, cols):
+                if [r, c] not in segmentCoords:
+                    curSegment[r][c] = (0, 0, 0)
+        if len(segmentDispDict[segmentId]) > 4:
+            cv2.imshow("Segment {id}".format(id=segmentId), curSegment)
+            # plotHistogram(segmentDispDict[segmentId])
+            cv2.waitKey(0)
+
+
+def getPixelNeighbors(pixel, dispMap):
+    ri = 0
+    ci = 0
+    r = pixel[0]
+    c = pixel[1]
+    rows = dispMap.shape[0]
+    cols = dispMap.shape[1]
+    neighbors = []
+    for i in range(1, 9):
+        if (i == 1):
+            ri = -1
+            ci = -1
+        if (i == 2): 
+            ri = -1
+            ci = 0
+        if (i == 3): 
+            ri = -1
+            ci = 1
+        if (i == 4): 
+            ri = 0
+            ci = 1
+        if (i == 5): 
+            ri = 1
+            ci = 1
+        if (i == 6): 
+            ri = 1
+            ci = 0
+        if (i == 7): 
+            ri = 1
+            ci = -1
+        if (i == 8): 
+            ri = 0
+            ci = -1
+        newR = r+ri
+        newC = c+ci
+        if not ((newR >= 0) and (newC >= 0) and (newR < rows) and (newC < cols)):
+            continue
+        n = [newR, newC, roundInt(dispMap[newR][newC])]
+        neighbors += [n]
+    return neighbors
+
+
 def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage):
     segmentDispDict = {}
     segmentCoordsDict = {}
@@ -114,20 +179,43 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
             if segmentId in segmentCoordsDict:
                 segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
             segmentCoordsDict[segmentId] = segmentCoords
+    segmentCoordsDictFinal = segmentCoordsDict.copy()
     for segmentId in segmentDispDict:
         disps = list(filter(lambda x: x > 0, segmentDispDict[segmentId]))
         segmentOutliers = detectOutliersByContinuityHeuristic(disps, verbose=False)
-        segmentOutliersDict[segmentId] = segmentOutliers
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
             segmentPixelDisp = roundInt(leftDispMap[x][y])
             if segmentPixelDisp in segmentOutliers:
-                outputScore[x][y] = name_to_rgb(
-                    code_2_color["maybeWrongSegmentOutlier"]
-                )
+                # if one of pixel's neighbors outside the segment has a matching disparity,
+                # move pixel to that segment
+                neighbors = getPixelNeighbors(pixel, leftDispMap)
+                neighborsFromOtherSegmentWithMatchingDisparity = list(filter(lambda x: x[2] == segmentPixelDisp and segments[x[0]][x[1]] != segmentId, neighbors))
+                if len(neighborsFromOtherSegmentWithMatchingDisparity) == 0:
+                    outputScore[x][y] = name_to_rgb(code_2_color["maybeWrongSegmentOutlier"])
+                    # outputScoreShow = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+                    # cv2.imshow("found a true segment outlier", outputScoreShow)
+                    # cv2.waitKey(0)
+                else:
+                    # n = neighborsFromOtherSegmentWithMatchingDisparity[0]
+                    # nSegmentId = segments[n[0]][n[1]]
+                    # # add the pixel to one of the segments housing matching disparities
+                    # segmentCoordsDictFinal[nSegmentId] = segmentCoordsDict[nSegmentId] + [[x, y]]
+                    # remove pixel from segment outliers
+                    segmentOutliers.remove(segmentPixelDisp)
+                    # # remove pixel from incorrect segment
+                    # segmentCoords = segmentCoordsDict[segmentId]
+                    # segmentCoords.remove([x, y])
+                    # segmentCoordsDictFinal[segmentId] = segmentCoords
+                    # segments[x][y] = nSegmentId
+                    outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
+                    # outputScoreShow = cv2.cvtColor(outputScore, cv2.COLOR_BGR2RGB)
+                    # cv2.imshow("redeemed a segment outlier", outputScoreShow)
+                    # cv2.waitKey(0)
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
+        segmentOutliersDict[segmentId] = segmentOutliers
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
 
-    return segmentCoordsDict, segmentOutliersDict, globalOutliers
+    return segmentCoordsDictFinal, segmentOutliersDict, globalOutliers

@@ -123,12 +123,12 @@ def correctPixels(fix, segmentCoordsDict, leftDispMap, newLeftDispMap, outliers)
                 newLeftDispMap[x][y] = roundInt(z)
 
 
-def fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap, leftOriginalImage):
+def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispMap, newLeftDispMap, leftOriginalImage):
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
     globalSegmentCoordsDict = {}
     leftOriginalImage = increaseContrast(leftOriginalImage)
-    segments = slic(leftOriginalImage, n_segments=7000, compactness=10)
+    segments = slic(leftOriginalImage, n_segments=6500, compactness=10)
     cv2.imshow("Broadly segmented image", label2rgb(segments, leftOriginalImage, kind="avg"))       
     cv2.waitKey(0)
 
@@ -140,7 +140,8 @@ def fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, 
                 segmentCoords = segmentCoords + globalSegmentCoordsDict[segmentId]
             globalSegmentCoordsDict[segmentId] = segmentCoords
     correctPixels("global", globalSegmentCoordsDict, leftDispMap, newLeftDispMap, globalOutliers) # pass 1: correct unknown pixels
-    correctPixels("local", segmentCoordsDict, leftDispMap, newLeftDispMap, segmentOutliers) # pass 2: correct segment outliers
+    correctPixels("local", segmentCoordsDict, leftDispMap, newLeftDispMap, segmentOutliersDict) # pass 2: correct segment outliers
+
 
 def processPixels(
     leftDispMap,
@@ -155,8 +156,8 @@ def processPixels(
     rows = leftDispMap.shape[0]
     cols = leftDispMap.shape[1]
 
-    segmentCoordsDict, segmentOutliers, globalOutliers = markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
-    fixDispMap(segmentCoordsDict, segmentOutliers, globalOutliers, leftDispMap, newLeftDispMap, leftOriginalImage)
+    segmentCoordsDict, segmentOutliersDict, globalOutliers = markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
+    fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispMap, newLeftDispMap, leftOriginalImage)
 
     for r in range(0, rows):
         for c in range(0, cols):
