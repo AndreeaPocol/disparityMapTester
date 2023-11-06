@@ -5,16 +5,16 @@ COLOR_DIFF_THRESH = math.sqrt(3) / 2  # TODO make a slider
 DISPLAY = True
 WINDOW_SIZE = 140
 
-# segmentMethod = "segmentKMeans"
-# segmentMethod = "segmentSLIC"
+# segmentMethod = "segmentKMeans" # assigns pixels from completely different regions to the same segment
+segmentMethod = "segmentSLIC"
 # segmentMethod = "segmentFile"
-# segmentMethod = "segmentMeanShift"
+# segmentMethod = "segmentMeanShift" # assigns pixels from completely different regions to the same segment
 # segmentMethod = "hybrid"
-# segmentMethod = "segmentOpenCVKMeans"
+# segmentMethod = "segmentOpenCVKMeans" # assigns pixels from completely different regions to the same segment
 # segmentMethod = "segmentFelzenszwalb"
 # segmentMethod = "segmentQuickshift"
 # segmentMethod = "segmentWatershed"
-segmentMethod = "fineSegmentation"
+# segmentMethod = "fineSegmentation"
 
 code_2_color = {
     "definitelyWrongOcclusionError": "brown",

@@ -43,7 +43,6 @@ def fineSegmentWatershed(img, tileId):
     avg = total/count
     avg = np.uint8(avg)
 
-    # cast the labeled image into the corresponding average color
     res = avg[labeled]
     result = res.reshape((img.shape))
     
@@ -84,6 +83,19 @@ def segmentQuickshift(img):
     cv2.imshow("result", mark_boundaries(img, segments_quick))
     cv2.waitKey(0)
     return segments_quick, img
+
+
+def fineSegmentQuickshift(img, tileId):
+    segments_quick = quickshift(img, kernel_size=5, max_dist=10, ratio=0.5)
+    print(f'Quickshift number of segments: {len(np.unique(segments_quick))}')
+    newSegments = segments_quick.astype(str)
+    for row in range(segments_quick.shape[0]):
+        for col in range(segments_quick.shape[1]):
+            oldLabel = segments_quick[row, col]
+            newSegments[row, col] = str(oldLabel) + tileId
+    # cv2.imshow("result with boundaries", mark_boundaries(img, segments_quick))
+    # cv2.waitKey(0)
+    return newSegments, img
 
 
 def segmentMeanShift(img):
@@ -165,14 +177,14 @@ def segmentOpenCVKMeans(img):
 
 def segmentSLIC(img):
     # applying Simple Linear Iterative Clustering on the image
-    segments = slic(img, n_segments=900, compactness=10)
+    segments = slic(img, n_segments=80000, compactness=10, max_num_iter=30) # 171434 segments -> no segmentation, 171433 -> false alarms
     # converts a label image into an RGB color image for visualizing the labeled regions.
     return segments, label2rgb(segments, img, kind="avg")
 
 
 def fineSegmentSLIC(img, tileId):
     # applying Simple Linear Iterative Clustering on the image
-    segments = slic(img, n_segments=900, compactness=10, max_num_iter=20)
+    segments = slic(img, n_segments=4000, compactness=10, max_num_iter=30) # 8712 segments -> no segmentation, 8711 segments -> false alarms
     newSegments = segments.astype(str)
     # converts a label image into an RGB color image for visualizing the labeled regions.
     for row in range(segments.shape[0]):
@@ -236,7 +248,7 @@ def fineSegmentation(img, window=WINDOW_SIZE):
             tileId = chr(ord(tileId) + 1)
             assert(tileId <= 'z')
     cv2.imshow("Segmented image", segmentedImg)
-    print(f"Labels {labeledImg}")
+    # print(f"Labels {labeledImg}")
     # cv2.imshow("result", mark_boundaries(segmentedImg, tiles))
     cv2.waitKey(0)  # waits until a key is pressed
     return labeledImg, segmentedImg
