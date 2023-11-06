@@ -113,9 +113,9 @@ def correctPixels(fix, segmentCoordsDict, leftDispMap, newLeftDispMap, outliers)
             x = pixel[0]
             y = pixel[1]
             # (A * x) + (B * y) + (C * z) + D = 0
-            z = (-D - (A * x) - (B * y))/C # TODO: z < 0 because of the disparity jumps caused by bad segmentation
-            # if z < 0:
-            #     print(f"correct disparity is negative for segment {segmentId}: ", points)
+            z = (-D - (A * x) - (B * y))/C # if z < 0, it's because of the disparity jumps caused by bad segmentation
+            if z < 0:
+                print(f"'correct' disparity is negative for segment {segmentId}: ", points, ", outliers: ", segmentPixelDisp)
             segmentPixelDisp = roundInt(leftDispMap[x][y])
             if (fix == "global") and ((segmentPixelDisp in outliers) or (segmentPixelDisp == 0)):
                 newLeftDispMap[x][y] = roundInt(z)
@@ -134,11 +134,19 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
 
     for r in range(0, rows):
         for c in range(0, cols):
-            segmentCoords = [[r, c]]
+            disp = roundInt(leftDispMap[r][c])
+            segmentCoords = [[r, c, disp]]
             segmentId = segments[r][c]
             if segmentId in globalSegmentCoordsDict:
                 segmentCoords = segmentCoords + globalSegmentCoordsDict[segmentId]
             globalSegmentCoordsDict[segmentId] = segmentCoords
+    
+    # remove segment outliers prior to correction
+    for segmentId, coords in globalSegmentCoordsDict.items():
+        segmentDisps = list(map(lambda x: x[2], coords))
+        segmentOutliers = detectOutliersByContinuityHeuristic(segmentDisps, verbose=False)
+        globalSegmentCoordsDict[segmentId] = list(filter(lambda x: x[2] == 0 or x[2] not in segmentOutliers, coords))
+
     correctPixels("global", globalSegmentCoordsDict, leftDispMap, newLeftDispMap, globalOutliers) # pass 1: correct unknown pixels
     correctPixels("local", segmentCoordsDict, leftDispMap, newLeftDispMap, segmentOutliersDict) # pass 2: correct segment outliers
 
