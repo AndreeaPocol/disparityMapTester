@@ -52,11 +52,12 @@ def detectOutliersStatistically(data, leftDispMap):
 
 def detectOutliersByContinuityHeuristic(data, verbose=True):
     outliers = []
+    needToSplit = False
     data.sort()
     ranges = list(group(data))
     numRanges = len(ranges)
     if numRanges == 0:
-        return []
+        return [], needToSplit
     if verbose:
         print("\n", "num ranges: ", numRanges, "\n")
         for range in ranges:
@@ -69,7 +70,9 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
                 outliers = ranges[0]
             elif len(ranges[1]) < len(ranges[0]):
                 outliers = ranges[1]
-    if numRanges > 2:
+            elif len(ranges[1]) == len(ranges[0]):
+                needToSplit = True
+    elif numRanges > 2:
         # the outlier is the first or last range in the sorted list of ranges,
         # provided there's a substantial gap
         if (ranges[1][0] - ranges[0][-1]) > OUTLIER_THRESH:
@@ -80,7 +83,7 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
                 outliers += ranges[-1]
     if verbose:
         print("OUTLIER(S): ", outliers, "\n")
-    return outliers
+    return outliers, needToSplit
 
 
 def displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage):
@@ -147,6 +150,33 @@ def getPixelNeighbors(pixel, dispMap):
     return neighbors
 
 
+def splitSegments(segmentsToSplit, segmentCoordsDict, segmentDispDict, segmentOutliersDict, leftDispMap):
+    for segmentId in segmentsToSplit:
+        disps = segmentDispDict[segmentId]
+        disps.sort()
+        disps = list(filter((0).__ne__, disps))
+        ranges = list(group(disps))
+        assert(len(ranges)==2)
+        boundary = max(ranges[0])
+        newSegmentPoints = []
+        points = segmentCoordsDict[segmentId]
+        newSegmentId = max(segmentCoordsDict.keys()) + 1
+        for point in points:
+            x = point[0]
+            y = point[1]
+            disp = roundInt(leftDispMap[x][y])
+            if disp <= boundary:
+                newSegmentPoints.append([x, y])
+                if [x, y] in segmentCoordsDict[segmentId]:
+                    segmentCoordsDict[segmentId].remove([x, y])
+                if [x, y, disp] in segmentCoordsDict[segmentId]:
+                    segmentCoordsDict[segmentId].remove([x, y, disp])
+                # segments[x][y] = newSegmentId # TODO: unnecessary?
+        segmentCoordsDict[newSegmentId] = newSegmentPoints
+        segmentOutliersDict[newSegmentId] = []
+    return segmentCoordsDict
+
+
 def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage):
     segmentDispDict = {}
     segmentCoordsDict = {}
@@ -156,7 +186,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
     data = list(filter(lambda x: x > 0, globalDisps))
     # globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
     # plotHistogram(globalDisps, lower, upper)
-    globalOutliers = detectOutliersByContinuityHeuristic(data, verbose=False)
+    globalOutliers, _ = detectOutliersByContinuityHeuristic(data, verbose=False)
 
     for r in range(0, rows):
         for c in range(0, cols):
@@ -177,10 +207,12 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
             if segmentId in segmentCoordsDict:
                 segmentCoords = segmentCoords + segmentCoordsDict[segmentId]
             segmentCoordsDict[segmentId] = segmentCoords
-    segmentCoordsDictFinal = segmentCoordsDict.copy()
+    segmentsToSplit = []
     for segmentId in segmentDispDict:
         disps = list(filter(lambda x: x > 0, segmentDispDict[segmentId]))
-        segmentOutliers = detectOutliersByContinuityHeuristic(disps, verbose=False)
+        segmentOutliers, needToSplit = detectOutliersByContinuityHeuristic(disps, verbose=False)
+        if needToSplit == True:
+            segmentsToSplit.append(segmentId)
         for pixel in segmentCoordsDict[segmentId]:
             x = pixel[0]
             y = pixel[1]
@@ -203,11 +235,13 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
                     # remove pixel's disparity from segment outliers
                     segmentOutliers = list(filter((segmentPixelDisp).__ne__, segmentOutliers))
                     # remove pixel from incorrect segment
-                    segments[x][y] = nSegmentId
+                    segments[x][y] = nSegmentId # TODO: unnecessary?
                     outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
         segmentOutliersDict[segmentId] = segmentOutliers
     # displaySegments(segmentCoordsDict, segmentDispDict, segmentedImage)
     
-    return segmentCoordsDictFinal, segmentOutliersDict, globalOutliers
+    segmentCoordsDict = splitSegments(segmentsToSplit, segmentCoordsDict, segmentDispDict, segmentOutliersDict, leftDispMap)
+
+    return segmentCoordsDict, segmentOutliersDict, globalOutliers

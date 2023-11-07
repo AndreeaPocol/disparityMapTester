@@ -114,9 +114,10 @@ def correctPixels(fix, segmentCoordsDict, leftDispMap, newLeftDispMap, outliers)
             y = pixel[1]
             # (A * x) + (B * y) + (C * z) + D = 0
             z = (-D - (A * x) - (B * y))/C # if z < 0, it's because of the disparity jumps caused by bad segmentation
-            if z < 0:
-                print(f"'correct' disparity is negative for segment {segmentId}: ", points, ", outliers: ", segmentPixelDisp)
             segmentPixelDisp = roundInt(leftDispMap[x][y])
+            if z < 0:
+                print(f"'correct' disparity is negative for segment {segmentId}: ", points, ", outlier disparity: ", segmentPixelDisp)
+            
             if (fix == "global") and ((segmentPixelDisp in outliers) or (segmentPixelDisp == 0)):
                 newLeftDispMap[x][y] = roundInt(z)
             elif (fix == "local") and (segmentPixelDisp in outliers[segmentId]):
@@ -141,12 +142,21 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
                 segmentCoords = segmentCoords + globalSegmentCoordsDict[segmentId]
             globalSegmentCoordsDict[segmentId] = segmentCoords
     
+    segmentsToSplit = []
+    segmentDispDict = {}
+    globalSegmentOutliersDict = {}
+
     # remove segment outliers prior to correction
     for segmentId, coords in globalSegmentCoordsDict.items():
         segmentDisps = list(map(lambda x: x[2], coords))
-        segmentOutliers = detectOutliersByContinuityHeuristic(segmentDisps, verbose=False)
+        segmentDispDict[segmentId] = segmentDisps
+        segmentOutliers, needToSplit = detectOutliersByContinuityHeuristic(segmentDisps, verbose=False)
+        globalSegmentOutliersDict[segmentId] = segmentOutliers
         globalSegmentCoordsDict[segmentId] = list(filter(lambda x: x[2] == 0 or x[2] not in segmentOutliers, coords))
-
+        if needToSplit == True:
+            segmentsToSplit.append(segmentId)
+    splitSegments(segmentsToSplit, globalSegmentCoordsDict, segmentDispDict, globalSegmentOutliersDict, leftDispMap)
+    
     correctPixels("global", globalSegmentCoordsDict, leftDispMap, newLeftDispMap, globalOutliers) # pass 1: correct unknown pixels
     correctPixels("local", segmentCoordsDict, leftDispMap, newLeftDispMap, segmentOutliersDict) # pass 2: correct segment outliers
 
