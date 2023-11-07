@@ -177,7 +177,7 @@ def segmentOpenCVKMeans(img):
 
 def segmentSLIC(img):
     # applying Simple Linear Iterative Clustering on the image
-    segments = slic(img, n_segments=80000, compactness=10, max_num_iter=30) # 171434 segments -> no segmentation, 171433 -> false alarms
+    segments = slic(img, n_segments=NUM_SEGS_SLIC, compactness=10, max_num_iter=30) # 171434 segments -> no segmentation, 171433 -> false alarms
     # converts a label image into an RGB color image for visualizing the labeled regions.
     return segments, label2rgb(segments, img, kind="avg")
 

@@ -129,7 +129,7 @@ def fixDispMap(segmentCoordsDict, segmentOutliersDict, globalOutliers, leftDispM
     cols = leftDispMap.shape[1]
     globalSegmentCoordsDict = {}
     leftOriginalImage = increaseContrast(leftOriginalImage)
-    segments = slic(leftOriginalImage, n_segments=6500, compactness=10)
+    segments = slic(leftOriginalImage, n_segments=NUM_SEGS_SLIC_GLOBAL, compactness=10)
     cv2.imshow("Broadly segmented image", label2rgb(segments, leftOriginalImage, kind="avg"))       
     cv2.waitKey(0)
 

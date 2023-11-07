@@ -4,6 +4,8 @@ OUTLIER_THRESH = 3
 COLOR_DIFF_THRESH = math.sqrt(3) / 2  # TODO make a slider
 DISPLAY = True
 WINDOW_SIZE = 140
+NUM_SEGS_SLIC = 80000
+NUM_SEGS_SLIC_GLOBAL = 7500
 
 # segmentMethod = "segmentKMeans" # assigns pixels from completely different regions to the same segment
 segmentMethod = "segmentSLIC"
