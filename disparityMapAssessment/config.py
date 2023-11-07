@@ -7,7 +7,6 @@ WINDOW_SIZE = 140
 
 # segmentMethod = "segmentKMeans" # assigns pixels from completely different regions to the same segment
 segmentMethod = "segmentSLIC"
-# segmentMethod = "segmentFile"
 # segmentMethod = "segmentMeanShift" # assigns pixels from completely different regions to the same segment
 # segmentMethod = "hybrid"
 # segmentMethod = "segmentOpenCVKMeans" # assigns pixels from completely different regions to the same segment

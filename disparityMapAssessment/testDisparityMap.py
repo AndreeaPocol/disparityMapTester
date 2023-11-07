@@ -203,22 +203,13 @@ def main():
     rightDispMapFile = ""
     leftOriginalImageFile = ""
     rightOriginalImageFile = ""
-    segmentFile = ""
-    if len(sys.argv) == 8:
+    if len(sys.argv) == 7:
         dispType = sys.argv[1]
         leftDispMapFile = sys.argv[2]
         rightDispMapFile = sys.argv[3]
         leftOriginalImageFile = sys.argv[4]
         rightOriginalImageFile = sys.argv[5]
-        dispMapScoreOutputFile = sys.argv[6]
-        segmentFile = sys.argv[7]
-    elif len(sys.argv) == 7:
-        dispType = sys.argv[1]
-        leftDispMapFile = sys.argv[2]
-        rightDispMapFile = sys.argv[3]
-        leftOriginalImageFile = sys.argv[4]
-        rightOriginalImageFile = sys.argv[5]
-        dispMapScoreOutputFile = sys.argv[6]
+        dispMapScoreOutputFilePrefix = sys.argv[6]
     else:
         print(
             "Usage: {name} [ dispType \
@@ -226,8 +217,7 @@ def main():
             rightDispMapFile \
             leftOriginalImageFile \
             rightOriginalImageFile \
-            dispMapScoreOutputFile \
-            [optional] segmentFile]".format(
+            dispMapScoreOutputFilePrefix".format(
                 name=sys.argv[0]
             )
         )

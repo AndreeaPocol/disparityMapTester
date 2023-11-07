@@ -194,15 +194,6 @@ def fineSegmentSLIC(img, tileId):
     return newSegments, label2rgb(segments, img, kind="avg")
 
 
-def segmentsFromFile(imgSegFile):
-    segments = []
-    with open(imgSegFile, 'r') as f:
-        for line in f.read().splitlines():
-            segments.append(line.split(',')[:-1]) # omit trailing blank element
-    # print(np.array(segments))
-    return np.array(segments)
-
-
 def increaseContrast(img):
     # converting to LAB color space
     lab= cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
@@ -256,8 +247,6 @@ def fineSegmentation(img, window=WINDOW_SIZE):
 
 def segment(img):
     img = increaseContrast(img)
-    if segmentMethod == "segmentFile":
-        return segmentsFromFile(img)
     if segmentMethod == "segmentSLIC":
         return segmentSLIC(img)
     if segmentMethod == "segmentKMeans":
