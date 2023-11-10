@@ -9,40 +9,24 @@
 clear
 
 images=(
-    aloe
     art
-    baby
-    bowling1
-    bowling2
-    lines
-    teddy
-    box
-    cat
-    cup
-    cups
-    globe1
-    globe2
-    grapes
+    flowerbed
     lilies
-    peaches
-    reflections
-    rock
-    roses
-    sail
-    sphere
+    statue
+    sunflowers
+    tree
+    trees
     woods
+    roses
+    rock
+    peaches
+    mug
+    grapes
 )
 
 generators=(
-    # anu
-    # asw
-    # bp
-    # dp
-    # gc
-    # rh
-    # scanline
-    BM
-    SGBM
+    CRE
+    IGEV
 )
 
 if [ $# -ge 1 ] ; then
@@ -51,14 +35,15 @@ if [ $# -ge 1 ] ; then
         mkdir report
         for i in "${images[@]}"; do
             for g in "${generators[@]}"; do
-                python3 testDisparityMap.py inputs/$i/$g/left_disparity_${i}.png inputs/$i/$g/right_disparity_${i}.png inputs/$i/${i}_L.png inputs/$i/${i}_R.png report/left_disparity_${i}_${g}_score.png
+                echo "Analyzing $i..."
+                python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/$g/$i-output/left_disparity.png disparityMapAssessment/results/$g/$i-output/right_disparity.png disparityMapAssessment/results/$g/$i-output/${i}_L.png disparityMapAssessment/results/$g/$i-output/${i}_R.png disparityMapAssessment/results/$g/$i-output/${i}_score
             done
         done
     elif [ $1 == "score" ] ; then
         echo "Computing scores..."
         for i in "${images[@]}"; do
             for g in "${generators[@]}"; do
-                python3 computeDisparityMapScore.py report/left_disparity_${i}_${g}_score.png
+                python3 disparityMapAssessment/computeDisparityMapScore.py disparityMapAssessment/results/$g/$i-output/${i}_score_left.png
             done
         done
     elif [ $1 == "maps" ] ; then
@@ -66,17 +51,17 @@ if [ $# -ge 1 ] ; then
         mkdir $1
         for i in "${images[@]}"; do
             cd inputs/$i/
-            mkdir BM
-            mkdir SGBM
+            mkdir CRE
+            mkdir IGEV
             cd ../..
-            python3 generateDisparityMaps.py inputs/$i/${i}_L.png inputs/$i/${i}_R.png inputs/$i/opencv/left_disparity_${i}.png inputs/$i/opencv/right_disparity_${i}.png
+            python3 disparityMapGeneration/generateDisparityMaps.py inputs/$i/${i}_L.png inputs/$i/${i}_R.png inputs/$i/opencv/left_disparity_${i}.png inputs/$i/opencv/right_disparity_${i}.png
         done
     else
         echo "Running single test..."
         mkdir $1
         for g in "${generators[@]}"; do
-            python3 testDisparityMap.py inputs/$1/$g/left_disparity_$1.png inputs/$1/$g/right_disparity_$1.png inputs/$1/$1_L.png inputs/$1/$1_R.png $1/left_disparity_$1_${g}_score.png
-            python3 computeDisparityMapScore.py $1/left_disparity_${1}_${g}_score.png
+            python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/$g/$i-output/left_disparity.png disparityMapAssessment/results/$g/$i-output/right_disparity.png disparityMapAssessment/results/$g/$i-output/${i}_L.png disparityMapAssessment/results/$g/$i-output/${i}_R.png disparityMapAssessment/results/$g/$i-output/${i}_score
+            python3 disparityMapAssessment/computeDisparityMapScore.py $1/left_disparity_${1}_${g}_score.png
         done
     fi
 fi
