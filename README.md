@@ -80,6 +80,19 @@ Generates a disparity map using OpenCV's StereoBM and StereoSGBM methods.
 
 Generates a disparity map using [CREStereo](https://openaccess.thecvf.com/content/CVPR2022/papers/Li_Practical_Stereo_Matching_via_Cascaded_Recurrent_Network_With_Adaptive_Correlation_CVPR_2022_paper.pdf). Requires CUDA. Can be run in Google Colab. Go to Edit -> Notebook Settings -> Hardware accelerator and select a GPU.
 
+Can generate both left and right disparity maps. 
+
+## *Executable:* `igev.ipynb`
+
+### *Overview:*
+
+Generates a disparity map using [IGEV-Stereo](https://arxiv.org/pdf/2303.06615.pdf). Requires CUDA. Can be run in Google Colab. Go to Edit -> Notebook Settings -> Hardware accelerator and select a GPU. 
+
+Pre-trained models are avaiable [here]{https://github.com/gangweiX/IGEV}.
+
+Can generate both left and right disparity maps. 
+
+
 ## *Executable:* `dlnr.ipynb`
 
 ### *Overview:*
@@ -89,3 +102,16 @@ Generates a disparity map using [DLNR](https://openaccess.thecvf.com/content/CVP
 Contact the authors for the following required files:
 * `DLNR_Middlebury.pth` (the pre-trained weights)
 * `inference.py`
+
+Cannot generate right disparity map. 
+
+
+## *Executable:* `raft.ipynb`
+
+### *Overview:*
+
+Generates a disparity map using [RAFT-Stereo](https://openaccess.thecvf.com/content/CVPR2023/papers/Zhao_High-Frequency_Stereo_Matching_Network_CVPR_2023_paper.pdf). Requires CUDA. Can be run in Google Colab. Go to Edit -> Notebook Settings -> Hardware accelerator and select a GPU. 
+
+Pre-trained models available [here](https://github.com/David-Zhao-1997/High-frequency-Stereo-Matching-Network).
+
+Cannot generate right disparity map. 
