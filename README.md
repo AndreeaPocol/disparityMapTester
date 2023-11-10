@@ -19,8 +19,10 @@ python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile>
 ### *Examples:*
 ```
 python3 disparityMapAssessment/testDisparityMap.py GRAY inputs/art/input/bad/left_disparity_art_bad.png inputs/art/input/bad/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/disparity_art_bad_score
+```
 
-python3 disparityMapAssessment/testDisparityMap.py GRAY inputs/cat/input/left_disparity_cat.png inputs/cat/input/right_disparity_cat.png inputs/cat/cat_L.png inputs/cat/cat_R.png inputs/cat/output/left_disparity_cat_score.png
+```
+python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/IGEV/grapes-output/left_disparity.png disparityMapAssessment/results/IGEV/grapes-output/right_disparity.png disparityMapAssessment/results/IGEV/grapes-output/grapes_L.png disparityMapAssessment/results/IGEV/grapes-output/grapes_R.png disparityMapAssessment/results/IGEV/grapes-output/grapes_score
 ```
 
 ```
@@ -103,7 +105,7 @@ Contact the authors for the following required files:
 * `DLNR_Middlebury.pth` (the pre-trained weights)
 * `inference.py`
 
-Cannot generate right disparity map. 
+Cannot generate right disparity maps. 
 
 
 ## *Executable:* `raft.ipynb`
@@ -114,4 +116,4 @@ Generates a disparity map using [RAFT-Stereo](https://openaccess.thecvf.com/cont
 
 Pre-trained models available [here](https://github.com/David-Zhao-1997/High-frequency-Stereo-Matching-Network).
 
-Cannot generate right disparity map. 
+Cannot generate right disparity maps. 
