@@ -1,6 +1,8 @@
 import re
 import cv2
 import numpy as np
+from config import COLORMAP
+
 
 def getScaleFromPMFile(dispMapFile):
     with open(dispMapFile, 'rb') as pfm_file:
@@ -23,7 +25,7 @@ def convertRgbToGrayscale(color_image, side):
 
     # NOTE: You must hardcode the colormap used to generate your RGB disparity maps.
     # See https://docs.opencv.org/4.x/d3/d50/group__imgproc__colormap.html for options.
-    color_values = map(tuple, cv2.applyColorMap(gray_values, cv2.COLORMAP_JET).reshape(256, 3)) # COLORMAP_INFERNO
+    color_values = map(tuple, cv2.applyColorMap(gray_values, COLORMAP).reshape(256, 3))
     color_to_gray_map = dict(zip(color_values, gray_values))
 
     # apply the inverse map to the false color image to reconstruct the grayscale image
