@@ -2,11 +2,7 @@ import numpy as np
 from webcolors import name_to_rgb
 from config import *
 import cv2
-
-
-def roundInt(x):
-    if x in [float("-inf"),float("inf")]: return 0
-    return int(round(x))
+from fileUtils import *
 
 
 def group(L):
@@ -50,7 +46,7 @@ def detectOutliersStatistically(data, leftDispMap):
     return outliers, lower, upper
 
 
-def detectOutliersByContinuityHeuristic(data, verbose=True):
+def detectOutliersByContinuityHeuristic(data, outlierType, verbose=True):
     outliers = []
     needToSplit = False
     data.sort()
@@ -70,10 +66,10 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
                 outliers = ranges[0]
             elif len(ranges[1]) < len(ranges[0]):
                 outliers = ranges[1]
-            elif len(ranges[1]) == len(ranges[0]):
-                needToSplit = True
+            # elif len(ranges[1]) == len(ranges[0]):
+            #     needToSplit = True
     elif numRanges > 2:
-        # the outlier is the first or last range in the sorted list of ranges,
+        # the outliers may be the first or last range in the sorted list of ranges,
         # provided there's a substantial gap
         if (ranges[1][0] - ranges[0][-1]) > OUTLIER_THRESH:
             if len(ranges[1]) > len(ranges[0]):
@@ -81,6 +77,14 @@ def detectOutliersByContinuityHeuristic(data, verbose=True):
         if (ranges[-1][0] - ranges[-2][-1]) > OUTLIER_THRESH:
             if len(ranges[-2]) > len(ranges[-1]):
                 outliers += ranges[-1]
+        # the outliers may be the shortest range(s)
+        # if outlierType != "global":
+        #     outlierRanges = list(filter(lambda r: len(r) < 3, ranges)) # can't fit plane with <3 points
+        #     if outlierRanges:
+        #         middleOutliers = list(np.concatenate(outlierRanges))
+        #         outliers = outliers + middleOutliers
+        #     if numRanges > len(outlierRanges):
+        #         needToSplit = True
     if verbose:
         print("OUTLIER(S): ", outliers, "\n")
     return outliers, needToSplit
@@ -152,28 +156,26 @@ def getPixelNeighbors(pixel, dispMap):
 
 def splitSegments(segmentsToSplit, segmentCoordsDict, segmentDispDict, segmentOutliersDict, leftDispMap):
     for segmentId in segmentsToSplit:
+        points = segmentCoordsDict[segmentId]
         disps = segmentDispDict[segmentId]
         disps.sort()
         disps = list(filter((0).__ne__, disps))
         ranges = list(group(disps))
-        assert(len(ranges)==2)
-        boundary = max(ranges[0])
-        newSegmentPoints = []
-        points = segmentCoordsDict[segmentId]
-        newSegmentId = max(segmentCoordsDict.keys()) + 1
-        for point in points:
-            x = point[0]
-            y = point[1]
-            disp = roundInt(leftDispMap[x][y])
-            if disp <= boundary:
-                newSegmentPoints.append([x, y])
-                if [x, y] in segmentCoordsDict[segmentId]:
-                    segmentCoordsDict[segmentId].remove([x, y])
-                if [x, y, disp] in segmentCoordsDict[segmentId]:
-                    segmentCoordsDict[segmentId].remove([x, y, disp])
-                # segments[x][y] = newSegmentId # TODO: unnecessary?
-        segmentCoordsDict[newSegmentId] = newSegmentPoints
-        segmentOutliersDict[newSegmentId] = []
+        numRanges = len(ranges)
+        for r in range(numRanges):
+            upperBoundary = max(ranges[r])
+            lowerBoundary = min(ranges[r])
+            newSegmentPoints = []
+            newSegmentId = max(segmentCoordsDict.keys()) + 1
+            for point in points:
+                x = point[0]
+                y = point[1]
+                disp = roundInt(leftDispMap[x][y])
+                if disp <= upperBoundary and disp >= lowerBoundary:
+                    newSegmentPoints.append([x, y])
+            segmentCoordsDict[newSegmentId] = newSegmentPoints
+            segmentOutliersDict[newSegmentId] = []
+        del segmentCoordsDict[segmentId]
     return segmentCoordsDict
 
 
@@ -186,7 +188,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
     data = list(filter(lambda x: x > 0, globalDisps))
     # globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
     # plotHistogram(globalDisps, lower, upper)
-    globalOutliers, _ = detectOutliersByContinuityHeuristic(data, verbose=False)
+    globalOutliers, _ = detectOutliersByContinuityHeuristic(data, "global", verbose=False)
 
     for r in range(0, rows):
         for c in range(0, cols):
@@ -210,7 +212,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
     segmentsToSplit = []
     for segmentId in segmentDispDict:
         disps = list(filter(lambda x: x > 0, segmentDispDict[segmentId]))
-        segmentOutliers, needToSplit = detectOutliersByContinuityHeuristic(disps, verbose=False)
+        segmentOutliers, needToSplit = detectOutliersByContinuityHeuristic(disps, "segment", verbose=False)
         if needToSplit == True:
             segmentsToSplit.append(segmentId)
         for pixel in segmentCoordsDict[segmentId]:
@@ -235,7 +237,6 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
                     # remove pixel's disparity from segment outliers
                     segmentOutliers = list(filter((segmentPixelDisp).__ne__, segmentOutliers))
                     # remove pixel from incorrect segment
-                    segments[x][y] = nSegmentId # TODO: unnecessary?
                     outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])
             else:
                 outputScore[x][y] = name_to_rgb(code_2_color["maybeRight"])

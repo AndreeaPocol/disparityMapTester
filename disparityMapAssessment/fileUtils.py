@@ -3,6 +3,10 @@ import cv2
 import numpy as np
 from config import COLORMAP
 
+def roundInt(x):
+    if x in [float("-inf"),float("inf")]: return 0
+    return int(round(x))
+
 
 def getScaleFromPMFile(dispMapFile):
     with open(dispMapFile, 'rb') as pfm_file:
@@ -32,7 +36,7 @@ def convertRgbToGrayscale(color_image, side):
     gray_image = np.apply_along_axis(lambda bgr: color_to_gray_map[tuple(bgr)], 2, color_image)
 
     # save reconstructed grayscale image
-    cv2.imwrite(f'grayscale_disp_map_{side}.png', gray_image)
+    # cv2.imwrite(f'grayscale_disp_map_{side}.png', gray_image)
     return gray_image
 
 
