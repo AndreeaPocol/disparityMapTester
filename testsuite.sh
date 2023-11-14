@@ -30,13 +30,12 @@ generators=(
 )
 
 if [ $# -ge 1 ] ; then
-    if [ $1 == "report" ] ; then
+    if [ $1 == "report" ] ; then # GPU required
         echo "Generating a report of all tests..."
-        mkdir report
         for i in "${images[@]}"; do
             for g in "${generators[@]}"; do
                 echo "Analyzing $i..."
-                python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/$g/$i-output/left_disparity.png disparityMapAssessment/results/$g/$i-output/right_disparity.png disparityMapAssessment/results/$g/$i-output/${i}_L.png disparityMapAssessment/results/$g/$i-output/${i}_R.png disparityMapAssessment/results/$g/$i-output/${i}_score
+                python3 disparityMapAssessment/testDisparityMap.py GRAY disparityMapAssessment/results/$g/$i-output/left_disparity.png disparityMapAssessment/results/$g/$i-output/right_disparity.png disparityMapAssessment/results/$g/$i-output/${i}_L.png disparityMapAssessment/results/$g/$i-output/${i}_R.png disparityMapAssessment/results/$g/$i-output/${i}_score
             done
         done
     elif [ $1 == "score" ] ; then
