@@ -219,7 +219,7 @@ def main():
         rightDispMapFile = sys.argv[3]
         leftOriginalImageFile = sys.argv[4]
         rightOriginalImageFile = sys.argv[5]
-        dispMapScoreOutputFilePrefix = sys.argv[6]
+        fileOutputPrefix = sys.argv[6]
     else:
         print(
             "Usage: {name} [ dispType \
@@ -227,7 +227,7 @@ def main():
             rightDispMapFile \
             leftOriginalImageFile \
             rightOriginalImageFile \
-            dispMapScoreOutputFilePrefix".format(
+            fileOutputPrefix".format(
                 name=sys.argv[0]
             )
         )
@@ -304,8 +304,10 @@ def main():
         cv2.waitKey(0)  # waits until a key is pressed
         cv2.destroyAllWindows()
 
-    cv2.imwrite(dispMapScoreOutputFilePrefix + "_left.png", leftOutputScore)
-    cv2.imwrite(dispMapScoreOutputFilePrefix + "_right.png", rightOutputScore)
+    cv2.imwrite(fileOutputPrefix + "_score_left.png", leftOutputScore)
+    cv2.imwrite(fileOutputPrefix + "_score_right.png", rightOutputScore)
+    cv2.imwrite(fileOutputPrefix + "_corrected_left.png", newLeftDispMap)
+    cv2.imwrite(fileOutputPrefix + "_corrected_right.png", newRightDispMap)
 
 
 if __name__ == "__main__":

@@ -13,20 +13,20 @@ Set your preferred segmentation method in `config.py`.
 
 If your disparity maps are RGB image files (e.g., PNG, JPEG), set the `dispType` parameter to "RGB". If your disparity maps are PGM or PFM files, set `dispType` to "PGM" or "PFM". If your disparity maps are grayscale images, set `dispType` to "GRAY".
 ```
-python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <dispMapScoreOutputFilePrefix>
+python3 testDisparityMap.py [dispType: RGB | PGM | PFM | GRAY] <leftDispMapFile> <rightDispMapFile> <leftOriginalImage> <rightOriginalImage> <fileOutputPrefix>
 ```
 
 ### *Examples:*
 ```
-python3 disparityMapAssessment/testDisparityMap.py GRAY inputs/art/input/bad/left_disparity_art_bad.png inputs/art/input/bad/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/disparity_art_bad_score
+python3 disparityMapAssessment/testDisparityMap.py GRAY inputs/art/input/bad/left_disparity_art_bad.png inputs/art/input/bad/right_disparity_art_bad.png inputs/art/art_L.png inputs/art/art_R.png inputs/art/output/disparity_art_bad
 ```
 
 ```
-python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/IGEV/grapes-output/left_disparity.png disparityMapAssessment/results/IGEV/grapes-output/right_disparity.png disparityMapAssessment/results/IGEV/grapes-output/grapes_L.png disparityMapAssessment/results/IGEV/grapes-output/grapes_R.png disparityMapAssessment/results/IGEV/grapes-output/grapes_score
+python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/IGEV/grapes-output/left_disparity.png disparityMapAssessment/results/IGEV/grapes-output/right_disparity.png disparityMapAssessment/results/IGEV/grapes-output/grapes_L.png disparityMapAssessment/results/IGEV/grapes-output/grapes_R.png disparityMapAssessment/results/IGEV/grapes-output/grapes_
 ```
 
 ```
-python3 testDisparityMap.py PFM inputs/artroom1/input/left_disparity_artroom1.pfm inputs/artroom1/input/right_disparity_artroom1.pfm inputs/artroom1/left_artroom1.png inputs/artroom1/right_artroom1.png inputs/artroom1/output/left_disparity_artroom1_score.png
+python3 testDisparityMap.py PFM inputs/artroom1/input/left_disparity_artroom1.pfm inputs/artroom1/input/right_disparity_artroom1.pfm inputs/artroom1/left_artroom1.png inputs/artroom1/right_artroom1.png inputs/artroom1/output/left_disparity_artroom1
 ```
 
 Original image             |  Disparity map            |  Score                    | Legend
