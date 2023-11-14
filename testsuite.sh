@@ -25,24 +25,33 @@ images=(
 )
 
 generators=(
-    CRE
+    # CRE
     IGEV
 )
 
+training_datasets=(
+    ETH3D
+    # SceneFlow
+)
+
+
 if [ $# -ge 1 ] ; then
     if [ $1 == "report" ] ; then # GPU required
-        echo "Generating a report of all tests..."
         for i in "${images[@]}"; do
             for g in "${generators[@]}"; do
-                echo "Analyzing $i..."
-                python3 disparityMapAssessment/testDisparityMap.py GRAY disparityMapAssessment/results/$g/$i-output/left_disparity.png disparityMapAssessment/results/$g/$i-output/right_disparity.png disparityMapAssessment/results/$g/$i-output/${i}_L.png disparityMapAssessment/results/$g/$i-output/${i}_R.png disparityMapAssessment/results/$g/$i-output/${i}_score
+                for t in "${training_datasets[@]}"; do
+                    echo "Analyzing $i ($g trained on $t)..."
+                    python3 disparityMapAssessment/testDisparityMap.py GRAY disparityMapAssessment/results/$g/$t/$i/left_disparity.png disparityMapAssessment/results/$g/$t/$i/right_disparity.png disparityMapAssessment/results/$g/$t/$i/${i}_L.png disparityMapAssessment/results/$g/$t/$i/${i}_R.png disparityMapAssessment/results/$g/$t/$i/${i}_score
+                done
             done
         done
     elif [ $1 == "score" ] ; then
         echo "Computing scores..."
         for i in "${images[@]}"; do
             for g in "${generators[@]}"; do
-                python3 disparityMapAssessment/computeDisparityMapScore.py disparityMapAssessment/results/$g/$i-output/${i}_score_left.png
+                for t in "${training_datasets[@]}"; do
+                    python3 disparityMapAssessment/computeDisparityMapScore.py disparityMapAssessment/results/$g/$t/$i/${i}_score_left.png
+                done
             done
         done
     elif [ $1 == "maps" ] ; then
@@ -59,8 +68,10 @@ if [ $# -ge 1 ] ; then
         echo "Running single test..."
         mkdir $1
         for g in "${generators[@]}"; do
-            python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/$g/$i-output/left_disparity.png disparityMapAssessment/results/$g/$i-output/right_disparity.png disparityMapAssessment/results/$g/$i-output/${i}_L.png disparityMapAssessment/results/$g/$i-output/${i}_R.png disparityMapAssessment/results/$g/$i-output/${i}_score
-            python3 disparityMapAssessment/computeDisparityMapScore.py $1/left_disparity_${1}_${g}_score.png
+            for t in "${training_datasets[@]}"; do
+                python3 disparityMapAssessment/testDisparityMap.py RGB disparityMapAssessment/results/$g/$t/$i/left_disparity.png disparityMapAssessment/results/$g/$t/$i/right_disparity.png disparityMapAssessment/results/$g/$t/$i/${i}_L.png disparityMapAssessment/results/$g/$t/$i/${i}_R.png disparityMapAssessment/results/$g/$t/$i/${i}_score
+                python3 disparityMapAssessment/computeDisparityMapScore.py $1/left_disparity_${1}_${g}_score.png
+            done
         done
     fi
 fi
