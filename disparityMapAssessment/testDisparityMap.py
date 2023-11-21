@@ -155,6 +155,10 @@ def main():
     else:
         leftDispMap = cv2.imread(leftDispMapFile, 0)  # grayscale mode
         rightDispMap = cv2.imread(rightDispMapFile, 0)
+    
+    leftDispMap = leftDispMap/DISP_MAP_DIVISOR
+    rightDispMap = rightDispMap/DISP_MAP_DIVISOR
+
     leftOutputScore = cv2.imread(leftOriginalImageFile, 1)  # colour mode
     rightOutputScore = cv2.imread(rightOriginalImageFile, 1)  # colour mode
     leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)

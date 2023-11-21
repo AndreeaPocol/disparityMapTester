@@ -9,6 +9,7 @@ WINDOW_SIZE = 140
 NUM_SEGS_SLIC = 80000
 NUM_SEGS_SLIC_GLOBAL = 6500
 COLORMAP = cv2.COLORMAP_INFERNO # cv2.COLORMAP_JET
+DISP_MAP_DIVISOR = 1 # 2 # 3
 
 # segmentMethod = "segmentKMeans" # assigns pixels from completely different regions to the same segment
 segmentMethod = "segmentSLIC"
