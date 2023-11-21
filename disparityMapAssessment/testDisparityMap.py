@@ -60,11 +60,11 @@ def pixelIsOccluded(r, c, leftDispMap, rightDispMap):
     if T[1] < 0:
         return "OOB"
 
-    occlusion = (R != P) or (T != Q)
-    if occlusion and (P[1] > R[1]) and (T[1] > Q[1]):
-        return "OCC_ERR"  # P is to the right of R, T is to the right of Q; pixel is occluded from behind (OCCLUSION ERROR)
+    occlusion = abs(R[1] - P[1]) > 1
+    if occlusion and (P[1] > R[1]):
+        return "OCC_ERR"  # P is to the right of R, P is occluded from behind (OCCLUSION ERROR)
     elif occlusion:
-        return "OCC"  # P is to the left of R, T is to the left of Q; pixel is occluded from the front (NORMAL)
+        return "OCC"  # P is to the left of R, P is occluding (NORMAL)
     else:
         return "NO_OCC"
 
