@@ -232,8 +232,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
                 if len(neighborsFromOtherSegmentWithMatchingDisparity) == 0:
                     outputScore[x][y] = name_to_rgb(code_2_color["maybeWrongSegmentOutlier"])
                 else:
-                    n = neighborsFromOtherSegmentWithMatchingDisparity[0]
-                    nSegmentId = segments[n[0]][n[1]]
+                    # n = neighborsFromOtherSegmentWithMatchingDisparity[0]
                     # remove pixel's disparity from segment outliers
                     segmentOutliers = list(filter((segmentPixelDisp).__ne__, segmentOutliers))
                     # remove pixel from incorrect segment
