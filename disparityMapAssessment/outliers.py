@@ -186,7 +186,7 @@ def markOutliers(segments, outputScore, leftDispMap, rows, cols, segmentedImage)
     globalDisps = list(np.concatenate(np.asarray(leftDispMap)).flat)
     globalDisps = [roundInt(disp) for disp in globalDisps]
     data = list(filter(lambda x: x > 0, globalDisps))
-    # globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
+    globalOutliers, lower, upper = detectOutliersStatistically(data, leftDispMap)
     # plotHistogram(globalDisps, lower, upper)
     globalOutliers, _ = detectOutliersByContinuityHeuristic(data, "global", verbose=False)
 

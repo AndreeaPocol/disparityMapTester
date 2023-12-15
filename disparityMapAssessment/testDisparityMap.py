@@ -160,16 +160,13 @@ def main():
     rightDispMap = rightDispMap/DISP_MAP_DIVISOR
 
     leftOutputScore = cv2.imread(leftOriginalImageFile, 1)  # colour mode
-    rightOutputScore = cv2.imread(rightOriginalImageFile, 1)  # colour mode
     leftOriginalImage = cv2.imread(leftOriginalImageFile, 1)
     rightOriginalImage = cv2.imread(rightOriginalImageFile, 1)
-    
+
     newLeftDispMap = leftDispMap.copy()
-    newRightDispMap = rightDispMap.copy()
     
     leftSegments, leftSegmentedImage = segment(leftOriginalImage)
-    rightSegments, rightSegmentedImage = segment(rightOriginalImage)
-
+    
     processPixels(
         leftDispMap,
         rightDispMap,
@@ -180,24 +177,7 @@ def main():
         rightOriginalImage,
         newLeftDispMap
     )
-
-    processPixels(
-        rightDispMap[:, ::-1],
-        leftDispMap[:, ::-1],
-        rightOutputScore[:, ::-1],
-        rightSegments[:, ::-1],
-        rightSegmentedImage[:, ::-1],
-        rightOriginalImage[:, ::-1],
-        leftOriginalImage[:, ::-1],
-        newRightDispMap[:, ::-1]
-    )
-
-    # Correct orientation of right disparity map
-    newRightDispMap = newRightDispMap
-    rightOutputScore = rightOutputScore
-
     leftOutputScore = cv2.cvtColor(leftOutputScore, cv2.COLOR_BGR2RGB)
-    rightOutputScore = cv2.cvtColor(rightOutputScore, cv2.COLOR_BGR2RGB)
 
     if DISPLAY:
         cv2.imshow("Original (left) disparity map", leftDispMap)
@@ -205,22 +185,42 @@ def main():
         cv2.imshow("Original (left) image", leftOriginalImage)
         cv2.imshow("Segmented (left) image", leftSegmentedImage)
         cv2.imshow("Corrected (left) disparity map", newLeftDispMap)
-
-        cv2.imshow("Original (right) disparity map", rightDispMap)
-        cv2.imshow("Marked (right) disparity map", rightOutputScore)
-        cv2.imshow("Original (right) image", rightOriginalImage)
-        cv2.imshow("Segmented (right) image", rightSegmentedImage)
-        cv2.imshow("Corrected (right) disparity map", newRightDispMap)
-
         # displayLegend()
         cv2.waitKey(0)  # waits until a key is pressed
         cv2.destroyAllWindows()
 
     cv2.imwrite(fileOutputPrefix + "_score_left.png", leftOutputScore)
-    cv2.imwrite(fileOutputPrefix + "_score_right.png", rightOutputScore)
     cv2.imwrite(fileOutputPrefix + "_corrected_left.png", newLeftDispMap)
-    cv2.imwrite(fileOutputPrefix + "_corrected_right.png", newRightDispMap)
 
+    if RIGHT_DISP_MAP:
+        rightOutputScore = cv2.imread(rightOriginalImageFile, 1)  # colour mode
+        newRightDispMap = rightDispMap.copy()
+        rightSegments, rightSegmentedImage = segment(rightOriginalImage)
+        processPixels(
+            rightDispMap[:, ::-1],
+            leftDispMap[:, ::-1],
+            rightOutputScore[:, ::-1],
+            rightSegments[:, ::-1],
+            rightSegmentedImage[:, ::-1],
+            rightOriginalImage[:, ::-1],
+            leftOriginalImage[:, ::-1],
+            newRightDispMap[:, ::-1]
+        )
+
+        rightOutputScore = cv2.cvtColor(rightOutputScore, cv2.COLOR_BGR2RGB)
+        
+        if DISPLAY:
+            cv2.imshow("Original (right) disparity map", rightDispMap)
+            cv2.imshow("Marked (right) disparity map", rightOutputScore)
+            cv2.imshow("Original (right) image", rightOriginalImage)
+            cv2.imshow("Segmented (right) image", rightSegmentedImage)
+            cv2.imshow("Corrected (right) disparity map", newRightDispMap)
+
+            # displayLegend()
+            cv2.waitKey(0)  # waits until a key is pressed
+            cv2.destroyAllWindows()
+        cv2.imwrite(fileOutputPrefix + "_score_right.png", rightOutputScore)
+        cv2.imwrite(fileOutputPrefix + "_corrected_right.png", newRightDispMap)
 
 if __name__ == "__main__":
     main()
